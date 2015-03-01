@@ -317,34 +317,6 @@
                               dieMaterialCache[dieSig]);
     }
 
-    this.create_d4 = function() {
-        return createDie('d4');
-    };
-
-    this.create_d6 = function() {
-        return createDie('d6');
-    };
-
-    this.create_d8 = function(/*labelColor, dieColor*/) {
-        return createDie('d8');
-    }
-
-    this.create_d10 = function() {
-        return createDie('d10');
-    }
-
-    this.create_d12 = function() {
-        return createDie('d12');
-    }
-
-    this.create_d20 = function() {
-        return createDie('d20');
-    }
-
-    this.create_d100 = function() {
-        return createDie('d100');
-    };
-
     this.parse_notation = function(notation) {
         var dr = /\s*(\d*)([a-z]+)(\d+)(\s*\+\s*(\d+)){0,1}\s*(\+|$)/gi;
         var ret = { set: [], constant: 0 }, res;
@@ -372,8 +344,6 @@
         if (nn.constant) notation += ' + ' + nn.constant;
         return notation;
     }
-
-    var that = this;
 
     this.dice_box = function(container, dimentions) {
         this.cw = container.clientWidth / 2;
@@ -472,7 +442,7 @@
     }
 
     this.dice_box.prototype.create_dice = function(type, pos, velocity, angle, axis) {
-        var dice = that['create_' + type]();
+        var dice = createDie(type);
         dice.castShadow = true;
         dice.dice_type = type;
         dice.body = new CANNON.RigidBody(dice_mass[type],
@@ -662,7 +632,7 @@
         var mouse_captured = false;
 
         for (var i = 0, pos = -3; i < known_types.length; ++i, ++pos) {
-            var dice = $t.dice['create_' + known_types[i]]();
+            var dice = createDie(known_types[i]);
             dice.position.set(pos * step, 0, step * 0.5);
             dice.castShadow = true;
             dice.userData = known_types[i];
