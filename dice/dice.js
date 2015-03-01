@@ -38,7 +38,7 @@
     function make_geom(vertices, faces, radius, tab, af) {
         var geom = new THREE.Geometry();
         for (var i = 0; i < vertices.length; ++i) {
-            var vertex = (new THREE.Vector3).fromArray(vertices[i]).normalize().multiplyScalar(radius);
+            var vertex = (new THREE.Vector3()).fromArray(vertices[i]).normalize().multiplyScalar(radius);
             vertex.index = geom.vertices.push(vertex) - 1;
         }
         for (var i = 0; i < faces.length; ++i) {
@@ -109,23 +109,18 @@
     var standard_d100_dice_face_labels = [' ', '00', '10', '20', '30', '40', '50',
                                           '60', '70', '80', '90'];
 
-    function createDiceMaterials(type, labelColor, diceColor) {
+    function createDieMaterials(type, labelColor, dieColor) {
         if (type === 'd4') {
             return create_d4_materials(scale / 2, scale * 2);
-        } else if (type === 'd100') {
-            _createDiceMaterials(standard_d100_dice_face_labels,
-                                 scale * 1.5,
-                                 labelColor,
-                                 diceColor);
         } else {
-            _createDiceMaterials(standard_d20_dice_face_labels,
-                                 scale,
-                                 labelColor,
-                                 diceColor);
+            return _createDiceMaterials(diceInfo[type].labels,
+                                        scale * diceInfo[type].marginFactor,
+                                        labelColor,
+                                        dieColor);
         }
     }
 
-    function _createDiceMaterials(face_labels, margin, labelColor, diceColor) {
+    function _createDiceMaterials(face_labels, margin, labelColor, dieColor) {
         function create_text_texture(text, color, back_color) {
             if (text === undefined) return null;
             var canvas = document.createElement("canvas");
@@ -154,18 +149,19 @@
                     $t.copyto(material_options,
                               {map: create_text_texture(face_labels[i],
                                                         labelColor,
-                                                        diceColor)})
+                                                        dieColor)})
                 )
             );
         }
         return materials;
     }
 
-    function create_dice_materials(face_labels, size, margin, labelColor, diceColor) {
+    function create_dice_materials(face_labels, margin, labelColor, dieColor) {
         function create_text_texture(text, color, back_color) {
             if (text === undefined) return null;
             var canvas = document.createElement("canvas");
             var context = canvas.getContext("2d");
+            var size = scale / 2;
             canvas.width = size + margin;
             canvas.height = size + margin;
             context.font = size + "pt Arial";
@@ -189,7 +185,7 @@
                     $t.copyto(material_options,
                               {map: create_text_texture(face_labels[i],
                                                         labelColor,
-                                                        diceColor)})
+                                                        dieColor)})
                 )
             );
         }
@@ -224,7 +220,7 @@
         var labels = [[], [0, 0, 0], [2, 4, 3], [1, 3, 4], [2, 1, 4], [1, 2, 3]];
         for (var i = 0; i < labels.length; ++i)
             materials.push(new THREE.MeshPhongMaterial($t.copyto(material_options,
-                                                                 { map: create_d4_text(labels[i], labelColor, diceColor) })));
+                                                                 { map: create_d4_text(labels[i], labelColor, dieColor) })));
         return materials;
     }
 
@@ -310,20 +306,26 @@
         shading: THREE.FlatShading,
     };
     var labelColor = '#aaaaaa';
-    var diceColor = '#202020';
+    var dieColor = '#202020';
     var d4MaterialCache, d100MaterialCache;
     var known_types = ['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100'];
     var dice_mass = { 'd4': 300, 'd6': 300, 'd8': 340, 'd10': 350, 'd12': 380, 'd20': 400, 'd100': 350 };
     var dice_inertia = { 'd4': 5, 'd6': 13, 'd8': 10, 'd10': 9, 'd12': 8, 'd20': 6, 'd100': 9 };
 
     var diceInfo = {
-        d4: {mass: 300, inertia: 5, scaleMultiplier: 1.2},
-        d6: {mass: 300, inertia: 13, scaleMultiplier: 0.9},
-        d8: {mass: 340, inertia: 10, scaleMultiplier: 1},
-        d10: {mass: 340, inertia: 10, scaleMultiplier: 0.9},
-        d12: {mass: 340, inertia: 10, scaleMultiplier: 0.9},
-        d20: {mass: 340, inertia: 10, scaleMultiplier: 1},
-        d100: {mass: 340, inertia: 10, scaleMultiplier: 0.9},
+        d4: {mass: 300, inertia: 5, radiusFactor: 1.2, marginFactor: null},
+        d6: {mass: 300, inertia: 13, radiusFactor: 0.9, marginFactor: 1,
+             labels: standard_d20_dice_face_labels},
+        d8: {mass: 340, inertia: 10, radiusFactor: 1, marginFactor: 1,
+             labels: standard_d20_dice_face_labels},
+        d10: {mass: 340, inertia: 10, radiusFactor: 0.9, marginFactor: 1,
+              labels: standard_d20_dice_face_labels},
+        d12: {mass: 340, inertia: 10, radiusFactor: 0.9, marginFactor: 1,
+              labels: standard_d20_dice_face_labels},
+        d20: {mass: 340, inertia: 10, radiusFactor: 1, marginFactor: 1,
+              labels: standard_d20_dice_face_labels},
+        d100: {mass: 340, inertia: 10, radiusFactor: 0.9, marginFactor: 1.5,
+               labels: standard_d100_dice_face_labels},
     };
     var dieMaterialCache = {}, dieGeometryCache = {};
 
@@ -331,12 +333,12 @@
         if (!dieGeometryCache.d4) {
             dieGeometryCache.d4 = createDieGeometry(
                 'd4',
-                scale * diceInfo.d4.scaleMultiplier
+                scale * diceInfo.d4.radiusFactor
             );
         }
         if (!dieMaterialCache.d4) {
             dieMaterialCache.d4 = new THREE.MeshFaceMaterial(
-                createDiceMaterials('d4', diceColor, labelColor)
+                createDieMaterials('d4', dieColor, labelColor)
             );
         }
         return new THREE.Mesh(dieGeometryCache.d4, dieMaterialCache.d4);
@@ -346,117 +348,93 @@
         if (!dieGeometryCache.d6) {
             dieGeometryCache.d6 = createDieGeometry(
                 'd6',
-                scale * diceInfo.d6.scaleMultiplier
+                scale * diceInfo.d6.radiusFactor
             );
         }
 
-        if (!dieMaterialCache[labelColor + diceColor]) {
-            dieMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
-                create_dice_materials(standard_d20_dice_face_labels,
-                                      scale / 2,
-                                      scale,
-                                      diceColor,
-                                      labelColor)
+        if (!dieMaterialCache[labelColor + dieColor]) {
+            dieMaterialCache[labelColor + dieColor] = new THREE.MeshFaceMaterial(
+                createDieMaterials('d6', dieColor, labelColor)
             );
         }
-        return new THREE.Mesh(dieGeometryCache.d6, dieMaterialCache[labelColor + diceColor]);
+        return new THREE.Mesh(dieGeometryCache.d6, dieMaterialCache[labelColor + dieColor]);
     };
 
-    this.create_d8 = function(/*labelColor, diceColor*/) {
+    this.create_d8 = function(/*labelColor, dieColor*/) {
         if (!dieGeometryCache.d8) {
             dieGeometryCache.d8 = createDieGeometry(
                 'd8',
-                scale * diceInfo.d8.scaleMultiplier
+                scale * diceInfo.d8.radiusFactor
             );
         }
 
-        if (!dieMaterialCache[labelColor + diceColor]) {
-            dieMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
-                create_dice_materials(standard_d20_dice_face_labels,
-                                      scale / 2,
-                                      scale,
-                                      labelColor,
-                                      diceColor)
+        if (!dieMaterialCache[labelColor + dieColor]) {
+            dieMaterialCache[labelColor + dieColor] = new THREE.MeshFaceMaterial(
+                createDieMaterials('d8', dieColor, labelColor)
             );
         }
-        return new THREE.Mesh(dieGeometryCache.d8, dieMaterialCache[labelColor + diceColor]);
+        return new THREE.Mesh(dieGeometryCache.d8, dieMaterialCache[labelColor + dieColor]);
     }
 
     this.create_d10 = function() {
         if (!dieGeometryCache.d10) {
             dieGeometryCache.d10 = createDieGeometry(
                 'd10',
-                scale * diceInfo.d10.scaleMultiplier
+                scale * diceInfo.d10.radiusFactor
             );
         }
 
-        if (!dieMaterialCache[labelColor + diceColor]) {
-            dieMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
-                create_dice_materials(standard_d20_dice_face_labels,
-                                      scale / 2,
-                                      scale,
-                                      labelColor,
-                                      diceColor)
+        if (!dieMaterialCache[labelColor + dieColor]) {
+            dieMaterialCache[labelColor + dieColor] = new THREE.MeshFaceMaterial(
+                createDieMaterials('d10', labelColor, dieColor)
             );
         }
-        return new THREE.Mesh(dieGeometryCache.d10, dieMaterialCache[labelColor + diceColor]);
+        return new THREE.Mesh(dieGeometryCache.d10, dieMaterialCache[labelColor + dieColor]);
     }
 
     this.create_d12 = function() {
         if (!dieGeometryCache.d12) {
             dieGeometryCache.d12 = createDieGeometry(
                 'd12',
-                scale * diceInfo.d12.scaleMultiplier
+                scale * diceInfo.d12.radiusFactor
             );
         }
 
-        if (!dieMaterialCache[labelColor + diceColor]) {
-            dieMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
-                create_dice_materials(standard_d20_dice_face_labels,
-                                      scale / 2,
-                                      scale,
-                                      labelColor,
-                                      diceColor)
+        if (!dieMaterialCache[labelColor + dieColor]) {
+            dieMaterialCache[labelColor + dieColor] = new THREE.MeshFaceMaterial(
+                createDieMaterials('d12', dieColor, labelColor)
             );
         }
-        return new THREE.Mesh(dieGeometryCache.d12, dieMaterialCache[labelColor + diceColor]);
+        return new THREE.Mesh(dieGeometryCache.d12, dieMaterialCache[labelColor + dieColor]);
     }
 
     this.create_d20 = function() {
         if (!dieGeometryCache.d20) {
             dieGeometryCache.d20 = createDieGeometry(
                 'd20',
-                scale * diceInfo.d20.scaleMultiplier
+                scale * diceInfo.d20.radiusFactor
             );
         }
 
-        if (!dieMaterialCache[labelColor + diceColor]) {
-            dieMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
-                create_dice_materials(standard_d20_dice_face_labels,
-                                      scale / 2,
-                                      scale,
-                                      labelColor,
-                                      diceColor)
+        if (!dieMaterialCache[dieColor + labelColor]) {
+            dieMaterialCache[dieColor + labelColor] = new THREE.MeshFaceMaterial(
+                createDieMaterials('d20', dieColor, labelColor)
             );
         }
-        return new THREE.Mesh(dieGeometryCache.d20, dieMaterialCache[labelColor + diceColor]);
+        return new THREE.Mesh(dieGeometryCache.d20, dieMaterialCache[labelColor + dieColor]);
     }
 
     this.create_d100 = function() {
         if (!dieGeometryCache.d100) {
             dieGeometryCache.d100 = createDieGeometry(
                 'd100',
-                scale * diceInfo.d100.scaleMultiplier
+                scale * diceInfo.d100.radiusFactor
             );
         }
 
         if (!d100MaterialCache) {
             d100MaterialCache = new THREE.MeshFaceMaterial(
-                create_dice_materials(standard_d100_dice_face_labels,
-                                      scale / 2,
-                                      scale * 1.5,
-                                      labelColor,
-                                      diceColor)
+                createDieMaterials('d100', labelColor, dieColor)
             );
         }
         return new THREE.Mesh(dieGeometryCache.d100, d100MaterialCache);
