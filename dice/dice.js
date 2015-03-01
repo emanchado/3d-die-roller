@@ -109,6 +109,58 @@
     var standard_d100_dice_face_labels = [' ', '00', '10', '20', '30', '40', '50',
                                           '60', '70', '80', '90'];
 
+    function createDiceMaterials(type, labelColor, diceColor) {
+        if (type === 'd4') {
+            return create_d4_materials(scale / 2, scale * 2);
+        } else if (type === 'd100') {
+            _createDiceMaterials(standard_d100_dice_face_labels,
+                                 scale * 1.5,
+                                 labelColor,
+                                 diceColor);
+        } else {
+            _createDiceMaterials(standard_d20_dice_face_labels,
+                                 scale,
+                                 labelColor,
+                                 diceColor);
+        }
+    }
+
+    function _createDiceMaterials(face_labels, margin, labelColor, diceColor) {
+        function create_text_texture(text, color, back_color) {
+            if (text === undefined) return null;
+            var canvas = document.createElement("canvas");
+            var context = canvas.getContext("2d");
+            var size = scale / 2;
+            canvas.width = size + margin;
+            canvas.height = size + margin;
+            context.font = size + "pt Arial";
+            context.fillStyle = back_color;
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            context.fillStyle = color;
+            context.fillText(text, canvas.width / 2, canvas.height / 2);
+            if (text == '6' || text == '9') {
+                context.fillText('  .', canvas.width / 2, canvas.height / 2);
+            }
+            var texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+        var materials = [];
+        for (var i = 0; i < face_labels.length; ++i) {
+            materials.push(
+                new THREE.MeshPhongMaterial(
+                    $t.copyto(material_options,
+                              {map: create_text_texture(face_labels[i],
+                                                        labelColor,
+                                                        diceColor)})
+                )
+            );
+        }
+        return materials;
+    }
+
     function create_dice_materials(face_labels, size, margin, labelColor, diceColor) {
         function create_text_texture(text, color, back_color) {
             if (text === undefined) return null;
@@ -142,7 +194,7 @@
             );
         }
         return materials;
-    };
+    }
 
     function create_d4_materials(size, margin) {
         function create_d4_text(text, color, back_color) {
@@ -273,27 +325,33 @@
         d20: {mass: 340, inertia: 10, scaleMultiplier: 1},
         d100: {mass: 340, inertia: 10, scaleMultiplier: 0.9},
     };
-    var diceMaterialCache = {}, diceGeometryCache = {};
+    var dieMaterialCache = {}, dieGeometryCache = {};
 
     this.create_d4 = function() {
-        if (!diceGeometryCache.d4) {
-            diceGeometryCache.d4 = createDieGeometry(
+        if (!dieGeometryCache.d4) {
+            dieGeometryCache.d4 = createDieGeometry(
                 'd4',
                 scale * diceInfo.d4.scaleMultiplier
             );
         }
-        if (!diceMaterialCache.d4) {
-            diceMaterialCache.d4 = new THREE.MeshFaceMaterial(
-                create_d4_materials(scale / 2, scale * 2)
+        if (!dieMaterialCache.d4) {
+            dieMaterialCache.d4 = new THREE.MeshFaceMaterial(
+                createDiceMaterials('d4', diceColor, labelColor)
             );
         }
-        return new THREE.Mesh(diceGeometryCache.d4, diceMaterialCache.d4);
+        return new THREE.Mesh(dieGeometryCache.d4, dieMaterialCache.d4);
     };
 
     this.create_d6 = function() {
-        if (!this.d6_geometry) this.d6_geometry = create_d6_geometry(scale * 0.9);
-        if (!diceMaterialCache[labelColor + diceColor]) {
-            diceMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
+        if (!dieGeometryCache.d6) {
+            dieGeometryCache.d6 = createDieGeometry(
+                'd6',
+                scale * diceInfo.d6.scaleMultiplier
+            );
+        }
+
+        if (!dieMaterialCache[labelColor + diceColor]) {
+            dieMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
                 create_dice_materials(standard_d20_dice_face_labels,
                                       scale / 2,
                                       scale,
@@ -301,74 +359,107 @@
                                       labelColor)
             );
         }
-        return new THREE.Mesh(this.d6_geometry, diceMaterialCache[labelColor + diceColor]);
+        return new THREE.Mesh(dieGeometryCache.d6, dieMaterialCache[labelColor + diceColor]);
     };
 
     this.create_d8 = function(/*labelColor, diceColor*/) {
-        if (!this.d8_geometry) {
-            this.d8_geometry = create_d8_geometry(scale);
+        if (!dieGeometryCache.d8) {
+            dieGeometryCache.d8 = createDieGeometry(
+                'd8',
+                scale * diceInfo.d8.scaleMultiplier
+            );
         }
-        if (!diceMaterialCache[labelColor + diceColor]) {
-            diceMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
+
+        if (!dieMaterialCache[labelColor + diceColor]) {
+            dieMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
                 create_dice_materials(standard_d20_dice_face_labels,
                                       scale / 2,
                                       scale,
                                       labelColor,
-                                      diceColor));
+                                      diceColor)
+            );
         }
-        return new THREE.Mesh(this.d8_geometry, diceMaterialCache[labelColor + diceColor]);
+        return new THREE.Mesh(dieGeometryCache.d8, dieMaterialCache[labelColor + diceColor]);
     }
 
     this.create_d10 = function() {
-        if (!this.d10_geometry) this.d10_geometry = create_d10_geometry(scale * 0.9);
-        if (!diceMaterialCache[labelColor + diceColor]) {
-            diceMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
+        if (!dieGeometryCache.d10) {
+            dieGeometryCache.d10 = createDieGeometry(
+                'd10',
+                scale * diceInfo.d10.scaleMultiplier
+            );
+        }
+
+        if (!dieMaterialCache[labelColor + diceColor]) {
+            dieMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
                 create_dice_materials(standard_d20_dice_face_labels,
                                       scale / 2,
                                       scale,
                                       labelColor,
-                                      diceColor));
+                                      diceColor)
+            );
         }
-        return new THREE.Mesh(this.d10_geometry, diceMaterialCache[labelColor + diceColor]);
+        return new THREE.Mesh(dieGeometryCache.d10, dieMaterialCache[labelColor + diceColor]);
     }
 
     this.create_d12 = function() {
-        if (!this.d12_geometry) this.d12_geometry = create_d12_geometry(scale * 0.9);
-        if (!diceMaterialCache[labelColor + diceColor]) {
-            diceMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
+        if (!dieGeometryCache.d12) {
+            dieGeometryCache.d12 = createDieGeometry(
+                'd12',
+                scale * diceInfo.d12.scaleMultiplier
+            );
+        }
+
+        if (!dieMaterialCache[labelColor + diceColor]) {
+            dieMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
                 create_dice_materials(standard_d20_dice_face_labels,
                                       scale / 2,
                                       scale,
                                       labelColor,
-                                      diceColor));
+                                      diceColor)
+            );
         }
-        return new THREE.Mesh(this.d12_geometry, diceMaterialCache[labelColor + diceColor]);
+        return new THREE.Mesh(dieGeometryCache.d12, dieMaterialCache[labelColor + diceColor]);
     }
 
     this.create_d20 = function() {
-        if (!this.d20_geometry) this.d20_geometry = create_d20_geometry(scale);
-        if (!diceMaterialCache[labelColor + diceColor]) {
-            diceMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
+        if (!dieGeometryCache.d20) {
+            dieGeometryCache.d20 = createDieGeometry(
+                'd20',
+                scale * diceInfo.d20.scaleMultiplier
+            );
+        }
+
+        if (!dieMaterialCache[labelColor + diceColor]) {
+            dieMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
                 create_dice_materials(standard_d20_dice_face_labels,
                                       scale / 2,
                                       scale,
                                       labelColor,
-                                      diceColor));
+                                      diceColor)
+            );
         }
-        return new THREE.Mesh(this.d20_geometry, diceMaterialCache[labelColor + diceColor]);
+        return new THREE.Mesh(dieGeometryCache.d20, dieMaterialCache[labelColor + diceColor]);
     }
 
     this.create_d100 = function() {
-        if (!this.d10_geometry) this.d10_geometry = this.create_d10_geometry(scale * 0.9);
+        if (!dieGeometryCache.d100) {
+            dieGeometryCache.d100 = createDieGeometry(
+                'd100',
+                scale * diceInfo.d100.scaleMultiplier
+            );
+        }
+
         if (!d100MaterialCache) {
             d100MaterialCache = new THREE.MeshFaceMaterial(
                 create_dice_materials(standard_d100_dice_face_labels,
                                       scale / 2,
                                       scale * 1.5,
                                       labelColor,
-                                      diceColor));
+                                      diceColor)
+            );
         }
-        return new THREE.Mesh(this.d10_geometry, d100MaterialCache);
+        return new THREE.Mesh(dieGeometryCache.d100, d100MaterialCache);
     }
 
     this.parse_notation = function(notation) {
@@ -759,3 +850,4 @@
 
 }).apply(teal.dice = teal.dice || {});
 
+ 
