@@ -176,13 +176,27 @@
         return materials;
     }
 
-    this.create_d4_geometry = function(radius) {
+    function createDieGeometry(type, radius) {
+        var geometryCreators = {
+            d4: create_d4_geometry,
+            d6: create_d6_geometry,
+            d8: create_d8_geometry,
+            d10: create_d10_geometry,
+            d12: create_d12_geometry,
+            d20: create_d20_geometry,
+            d100: create_d10_geometry
+        };
+
+        return geometryCreators[type](radius);
+    }
+
+    function create_d4_geometry(radius) {
         var vertices = [[1, 1, 1], [-1, -1, 1], [-1, 1, -1], [1, -1, -1]];
         var faces = [[1, 0, 2, 1], [0, 1, 3, 2], [0, 3, 2, 3], [1, 2, 3, 4]];
         return create_geom(vertices, faces, radius, -0.1, Math.PI * 7 / 6);
     }
 
-    this.create_d6_geometry = function(radius) {
+    function create_d6_geometry(radius) {
         var vertices = [[-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
                         [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]];
         var faces = [[0, 3, 2, 1, 1], [1, 2, 6, 5, 2], [0, 1, 5, 4, 3],
@@ -190,14 +204,14 @@
         return create_geom(vertices, faces, radius, 0.1, Math.PI / 4);
     }
 
-    this.create_d8_geometry = function(radius) {
+    function create_d8_geometry(radius) {
         var vertices = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
         var faces = [[0, 2, 4, 1], [0, 4, 3, 2], [0, 3, 5, 3], [0, 5, 2, 4], [1, 3, 4, 5],
                      [1, 4, 2, 6], [1, 2, 5, 7], [1, 5, 3, 8]];
         return create_geom(vertices, faces, radius, 0, -Math.PI / 4 / 2);
     }
 
-    this.create_d10_geometry = function(radius) {
+    function create_d10_geometry(radius) {
         var a = Math.PI * 2 / 10, k = Math.cos(a), h = 0.105, v = -1;
         var vertices = [];
         for (var i = 0, b = 0; i < 10; ++i, b += a)
@@ -210,7 +224,7 @@
         return create_geom(vertices, faces, radius, 0, Math.PI * 6 / 5);
     }
 
-    this.create_d12_geometry = function(radius) {
+    function create_d12_geometry(radius) {
         var p = (1 + Math.sqrt(5)) / 2, q = 1 / p;
         var vertices = [[0, q, p], [0, q, -p], [0, -q, p], [0, -q, -p], [p, 0, q],
                         [p, 0, -q], [-p, 0, q], [-p, 0, -q], [q, p, 0], [q, -p, 0], [-q, p, 0],
@@ -222,7 +236,7 @@
         return create_geom(vertices, faces, radius, 0.2, -Math.PI / 4 / 2);
     }
 
-    this.create_d20_geometry = function(radius) {
+    function create_d20_geometry(radius) {
         var t = (1 + Math.sqrt(5)) / 2;
         var vertices = [[-1, t, 0], [1, t, 0 ], [-1, -t, 0], [1, -t, 0],
                         [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
@@ -263,7 +277,10 @@
 
     this.create_d4 = function() {
         if (!diceGeometryCache.d4) {
-            diceGeometryCache.d4 = this.create_d4_geometry(scale * diceInfo.d4.scaleMultiplier);
+            diceGeometryCache.d4 = createDieGeometry(
+                'd4',
+                scale * diceInfo.d4.scaleMultiplier
+            );
         }
         if (!diceMaterialCache.d4) {
             diceMaterialCache.d4 = new THREE.MeshFaceMaterial(
@@ -274,62 +291,62 @@
     };
 
     this.create_d6 = function() {
-        if (!this.d6_geometry) this.d6_geometry = this.create_d6_geometry(scale * 0.9);
+        if (!this.d6_geometry) this.d6_geometry = create_d6_geometry(scale * 0.9);
         if (!diceMaterialCache[labelColor + diceColor]) {
             diceMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
-            create_dice_materials(standard_d20_dice_face_labels,
-            scale / 2,
-            scale,
-            diceColor,
-            labelColor)
-           );
-           }
-            return new THREE.Mesh(this.d6_geometry, diceMaterialCache[labelColor + diceColor]);
-           };
+                create_dice_materials(standard_d20_dice_face_labels,
+                                      scale / 2,
+                                      scale,
+                                      diceColor,
+                                      labelColor)
+            );
+        }
+        return new THREE.Mesh(this.d6_geometry, diceMaterialCache[labelColor + diceColor]);
+    };
 
-            this.create_d8 = function(/*labelColor, diceColor*/) {
-            if (!this.d8_geometry) {
-            this.d8_geometry = this.create_d8_geometry(scale);
-           }
-            if (!diceMaterialCache[labelColor + diceColor]) {
+    this.create_d8 = function(/*labelColor, diceColor*/) {
+        if (!this.d8_geometry) {
+            this.d8_geometry = create_d8_geometry(scale);
+        }
+        if (!diceMaterialCache[labelColor + diceColor]) {
             diceMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
-            create_dice_materials(standard_d20_dice_face_labels,
-            scale / 2,
-            scale,
-            labelColor,
-            diceColor));
-           }
-            return new THREE.Mesh(this.d8_geometry, diceMaterialCache[labelColor + diceColor]);
-           }
+                create_dice_materials(standard_d20_dice_face_labels,
+                                      scale / 2,
+                                      scale,
+                                      labelColor,
+                                      diceColor));
+        }
+        return new THREE.Mesh(this.d8_geometry, diceMaterialCache[labelColor + diceColor]);
+    }
 
-            this.create_d10 = function() {
-            if (!this.d10_geometry) this.d10_geometry = this.create_d10_geometry(scale * 0.9);
-            if (!diceMaterialCache[labelColor + diceColor]) {
+    this.create_d10 = function() {
+        if (!this.d10_geometry) this.d10_geometry = create_d10_geometry(scale * 0.9);
+        if (!diceMaterialCache[labelColor + diceColor]) {
             diceMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
-            create_dice_materials(standard_d20_dice_face_labels,
-            scale / 2,
-            scale,
-            labelColor,
-            diceColor));
-           }
-            return new THREE.Mesh(this.d10_geometry, diceMaterialCache[labelColor + diceColor]);
-           }
+                create_dice_materials(standard_d20_dice_face_labels,
+                                      scale / 2,
+                                      scale,
+                                      labelColor,
+                                      diceColor));
+        }
+        return new THREE.Mesh(this.d10_geometry, diceMaterialCache[labelColor + diceColor]);
+    }
 
-            this.create_d12 = function() {
-            if (!this.d12_geometry) this.d12_geometry = this.create_d12_geometry(scale * 0.9);
-            if (!diceMaterialCache[labelColor + diceColor]) {
+    this.create_d12 = function() {
+        if (!this.d12_geometry) this.d12_geometry = create_d12_geometry(scale * 0.9);
+        if (!diceMaterialCache[labelColor + diceColor]) {
             diceMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
-            create_dice_materials(standard_d20_dice_face_labels,
-            scale / 2,
-            scale,
-                               labelColor,
-                               diceColor));
+                create_dice_materials(standard_d20_dice_face_labels,
+                                      scale / 2,
+                                      scale,
+                                      labelColor,
+                                      diceColor));
         }
         return new THREE.Mesh(this.d12_geometry, diceMaterialCache[labelColor + diceColor]);
     }
 
     this.create_d20 = function() {
-        if (!this.d20_geometry) this.d20_geometry = this.create_d20_geometry(scale);
+        if (!this.d20_geometry) this.d20_geometry = create_d20_geometry(scale);
         if (!diceMaterialCache[labelColor + diceColor]) {
             diceMaterialCache[labelColor + diceColor] = new THREE.MeshFaceMaterial(
                 create_dice_materials(standard_d20_dice_face_labels,
