@@ -1,6 +1,8 @@
+/*global CANNON, THREE, $t, requestAnimationFrame, teal */
+
 "use strict";
 
-(function(dice) {
+(function() {
 
     var randomStorage = [], useRandomStorage = true;
 
@@ -29,7 +31,6 @@
             cv.push(new CANNON.Vec3(v[0] * l, v[1] * l, v[2] * l));
         }
         for (var i = 0; i < faces.length; ++i) {
-            var f = faces[i];
             cf.push(faces[i].slice(0, faces[i].length - 1));
         }
         return new CANNON.ConvexPolyhedron(cv, cf);
@@ -194,7 +195,9 @@
     }
 
     function createD10Geometry(radius) {
-        var a = Math.PI * 2 / 10, k = Math.cos(a), h = 0.105, v = -1;
+        var a = Math.PI * 2 / 10,
+            h = 0.105,
+            v = -1;
         var vertices = [];
         for (var i = 0, b = 0; i < 10; ++i, b += a) {
             vertices.push([Math.cos(b), Math.sin(b), h * (i % 2 ? 1 : -1)]);
@@ -232,7 +235,6 @@
     }
 
     var scale = 50;
-    var chamfer = 0.6;
     var materialOptions = {
         specular: '#171d1f',
         color: '#ffffff',
@@ -242,7 +244,6 @@
     };
     var defaultLabelColor = '#aaaaaa';
     var defaultDieColor = '#202020';
-    var d4MaterialCache, d100MaterialCache;
     var knownDieTypes = ['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100'];
 
     var dieInfo = {
@@ -290,7 +291,7 @@
     this.parseNotation = function(notation) {
         var dr = /\s*(\d*)([a-z]+)(\d+)(\s*\+\s*(\d+)){0,1}\s*(\+|$)/gi;
         var ret = { set: [], constant: 0 }, res;
-        while (res = dr.exec(notation)) {
+        while ((res = dr.exec(notation))) {
             var command = res[2];
             if (command !== 'd') {
                 continue;
@@ -311,7 +312,7 @@
             }
         }
         return ret;
-    }
+    };
 
     this.stringifyNotation = function(nn) {
         var dict = {}, notation = '';
@@ -328,9 +329,11 @@
             }
             notation += dict[i] + i;
         }
-        if (nn.constant) notation += ' + ' + nn.constant;
+        if (nn.constant) {
+            notation += ' + ' + nn.constant;
+        }
         return notation;
-    }
+    };
 
     this.dieBox = function(container, dimensions) {
         this.cw = container.clientWidth / 2;
@@ -347,9 +350,9 @@
         scale = Math.sqrt(this.w * this.w + this.h * this.h) / 13;
         this.useAdaptiveTimestep = true;
 
-        this.renderer = window.WebGLRenderingContext
-            ? new THREE.WebGLRenderer({ antialias: true })
-        : new THREE.CanvasRenderer({ antialias: true });
+        this.renderer = window.WebGLRenderingContext ?
+            new THREE.WebGLRenderer({ antialias: true }) :
+            new THREE.CanvasRenderer({ antialias: true });
         this.renderer.setSize(this.cw * 2, this.ch * 2);
         this.renderer.shadowMapEnabled = true;
         this.renderer.shadowMapSoft = true;
@@ -426,7 +429,7 @@
         this.running = false;
 
         this.renderer.render(this.scene, this.camera);
-    }
+    };
 
     this.dieBox.prototype.createDie = function(type, pos, velocity, angle, axis, labelColor, color) {
         var dice = createDie(type, labelColor, color);
@@ -443,7 +446,7 @@
         this.scene.add(dice);
         this.dices.push(dice);
         this.world.add(dice.body);
-    }
+    };
 
     this.dieBox.prototype.check = function() {
         var res = true;
@@ -452,7 +455,9 @@
         if (time - this.running < 10000) {
             for (var i = 0; i < this.dices.length; ++i) {
                 var dice = this.dices[i];
-                if (dice.diceStopped == true) continue;
+                if (dice.diceStopped === true) {
+                    continue;
+                }
                 var a = dice.body.angularVelocity, v = dice.body.velocity;
                 if (Math.abs(a.x) < e && Math.abs(a.y) < e && Math.abs(a.z) < e &&
                     Math.abs(v.x) < e && Math.abs(v.y) < e && Math.abs(v.z) < e) {
@@ -461,11 +466,11 @@
                             dice.diceStopped = true;
                             continue;
                         }
+                    } else {
+                        dice.diceStopped = (new Date()).getTime();
                     }
-                    else dice.diceStopped = (new Date()).getTime();
                     res = false;
-                }
-                else {
+                } else {
                     dice.diceStopped = undefined;
                     res = false;
 
@@ -476,23 +481,30 @@
             this.running = false;
             var values = [];
             for (var i in this.dices) {
-                var dice = this.dices[i], invert = dice.dieType == 'd4' ? -1 : 1;
+                var dice = this.dices[i],
+                    invert = dice.dieType === 'd4' ? -1 : 1;
                 var intersects = (new THREE.Raycaster(
                     new THREE.Vector3(dice.position.x, dice.position.y, 200 * invert),
                     new THREE.Vector3(0, 0, -1 * invert))).intersectObjects([dice]);
                 var matindex = intersects[0].face.materialIndex - 1;
-                if (dice.dieType == 'd100') matindex *= 10;
+                if (dice.dieType === 'd100') {
+                    matindex *= 10;
+                }
                 values.push(matindex);
             }
-            if (this.callback) this.callback.call(this, values);
+            if (this.callback) {
+                this.callback.call(this, values);
+            }
         }
-    }
+    };
 
     this.dieBox.prototype.__animate = function(threadid) {
         var time = (new Date()).getTime();
         if (this.useAdaptiveTimestep) {
             var timeDiff = (time - this.lastTime) / 1000;
-            if (timeDiff > 3) timeDiff = 1 / 60;
+            if (timeDiff > 3) {
+                timeDiff = 1 / 60;
+            }
             while (timeDiff > 1.1 / 60) {
                 this.world.step(1 / 60);
                 timeDiff -= 1 / 60;
@@ -504,31 +516,37 @@
         }
         for (var i in this.scene.children) {
             var interact = this.scene.children[i];
-            if (interact.body != undefined) {
+            if (interact.body !== undefined) {
                 interact.body.position.copy(interact.position);
                 interact.body.quaternion.copy(interact.quaternion);
             }
         }
         this.renderer.render(this.scene, this.camera);
         this.lastTime = this.lastTime ? time : (new Date()).getTime();
-        if (this.running == threadid) this.check();
-        if (this.running == threadid) {
+        if (this.running === threadid) {
+            this.check();
+        }
+        if (this.running === threadid) {
             (function(t, tid) {
                 requestAnimationFrame(function() { t.__animate(tid); });
             })(this, threadid);
         }
-    }
+    };
 
     this.dieBox.prototype.clear = function() {
         this.running = false;
         var die;
-        while (die = this.dices.pop()) {
+        while ((die = this.dices.pop())) {
             this.scene.remove(die); 
-            if (die.body) this.world.remove(die.body);
+            if (die.body) {
+                this.world.remove(die.body);
+            }
         }
-        if (this.pane) this.scene.remove(this.pane);
+        if (this.pane) {
+            this.scene.remove(this.pane);
+        }
         this.renderer.render(this.scene, this.camera);
-    }
+    };
 
     this.dieBox.prototype.generateVectors = function(rollSpec, coords, boost) {
         function makeRandomVector(coords) {
@@ -537,8 +555,8 @@
                 x: coords.x * Math.cos(randomAngle) - coords.y * Math.sin(randomAngle),
                 y: coords.x * Math.sin(randomAngle) + coords.y * Math.cos(randomAngle)
             };
-            if (vec.x == 0) vec.x = 0.01;
-            if (vec.y == 0) vec.y = 0.01;
+            vec.x = vec.x || 0.01;
+            vec.y = vec.y || 0.01;
             return vec;
         }
 
@@ -551,7 +569,11 @@
                 z: rnd() * 200 + 200
             };
             var projector = Math.abs(vec.x / vec.y);
-            if (projector > 1.0) pos.y /= projector; else pos.x *= projector;
+            if (projector > 1.0) {
+                pos.y /= projector;
+            } else {
+                pos.x *= projector;
+            }
             var velvec = makeRandomVector(coords);
             var velocity = { x: velvec.x * boost, y: velvec.y * boost, z: -10 };
             var inertia = dieInfo[rollSpec.set[i].type].inertia;
@@ -572,7 +594,7 @@
             });
         }
         return vectors;
-    }
+    };
 
     this.dieBox.prototype.roll = function(vectors, callback) {
         this.clear();
@@ -589,14 +611,18 @@
         this.running = (new Date()).getTime();
         this.lastTime = 0;
         this.__animate(this.running);
-    }
+    };
 
     this.dieBox.prototype.__selectorAnimate = function(threadid) {
         var time = (new Date()).getTime();
         var timeDiff = (time - this.lastTime) / 1000;
-        if (timeDiff > 3) timeDiff = 1 / 60;
+        if (timeDiff > 3) {
+            timeDiff = 1 / 60;
+        }
         var angleChange = 0.3 * timeDiff * Math.PI * Math.min(24000 + threadid - time, 6000) / 6000;
-        if (angleChange < 0) this.running = false;
+        if (angleChange < 0) {
+            this.running = false;
+        }
         for (var i in this.dices) {
             this.dices[i].rotation.y += angleChange;
             this.dices[i].rotation.x += angleChange / 4;
@@ -605,20 +631,22 @@
 
         this.lastTime = time;
         this.renderer.render(this.scene, this.camera);
-        if (this.running == threadid) {
+        if (this.running === threadid) {
             (function(t, tid) {
                 requestAnimationFrame(function() { t.__selectorAnimate(tid); });
             })(this, threadid);
         }
-    }
+    };
 
     this.dieBox.prototype.searchDieByMouse = function(ev) {
         var intersects = (new THREE.Raycaster(this.camera.position, 
                                               (new THREE.Vector3((ev.clientX - this.cw) / this.aspect,
                                                                  (ev.clientY - this.ch) / this.aspect, this.w / 9))
                                               .sub(this.camera.position).normalize())).intersectObjects(this.dices);
-        if (intersects.length) return intersects[0].object.userData;
-    }
+        if (intersects.length) {
+            return intersects[0].object.userData;
+        }
+    };
 
     this.dieBox.prototype.drawSelector = function() {
         this.clear();
@@ -640,7 +668,7 @@
         this.running = (new Date()).getTime();
         this.lastTime = 0;
         this.__selectorAnimate(this.running);
-    }
+    };
 
     this.dieBox.prototype.bindMouse = function(container, notationGetter, beforeRoll, afterRoll) {
         var box = this;
@@ -649,13 +677,19 @@
             box.mouseStart = { x: ev.clientX, y: ev.clientY };
         });
         $t.bind(container, ['mouseup', 'touchend', 'touchcancel'], function(ev) {
-            if (box.rolling) return;
+            if (box.rolling) {
+                return;
+            }
             var coords = {x: ev.clientX - box.mouseStart.x,
                           y: -(ev.clientY - box.mouseStart.y)};
             var dist = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
-            if (dist < Math.sqrt(box.w * box.h * 0.01)) return;
+            if (dist < Math.sqrt(box.w * box.h * 0.01)) {
+                return;
+            }
             var notation = notationGetter.call(box);
-            if (notation.set.length == 0) return;
+            if (notation.set.length === 0) {
+                return;
+            }
 
             var dieSet = notation.set.map(function(dieType) {
                 return {
@@ -666,25 +700,29 @@
             });
             var dieSpec = {set: dieSet, constant: notation.constant};
 
-            var timeInt = (new Date()).getTime() - box.mouseTime;
-            if (timeInt > 2000) timeInt = 2000;
+            var timeInt = Math.min((new Date()).getTime() - box.mouseTime,
+                                   2000);
             var boost = Math.sqrt((2500 - timeInt) / 2500) * dist * 2;
             coords.x /= dist; coords.y /= dist;
 
             rollDice(box, dieSpec, coords, boost, beforeRoll, afterRoll);
         });
-    }
+    };
 
     this.dieBox.prototype.bindThrow = function(button, notationGetter, beforeRoll, afterRoll) {
         var box = this;
         $t.bind(button, ['mouseup', 'touchend', 'touchcancel'], function(ev) {
-            if (box.rolling) return;
+            if (box.rolling) {
+                return;
+            }
             ev.stopPropagation();
             var coords = {x: (rnd() * 2 - 1) * box.w,
                           y: -(rnd() * 2 - 1) * box.h};
             var dist = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
             var notation = notationGetter.call(box);
-            if (notation.set.length == 0) return;
+            if (notation.set.length === 0) {
+                return;
+            }
             var boost = (rnd() + 3) * dist;
             coords.x /= dist; coords.y /= dist;
 
@@ -699,21 +737,23 @@
 
             rollDice(box, dieSpec, coords, boost, beforeRoll, afterRoll);
         });
-    }
+    };
 
     function rollDice(box, notation, coords, boost, beforeRoll, afterRoll) {
         var vectors = box.generateVectors(notation, coords, boost);
         box.rolling = true;
-        if (beforeRoll) beforeRoll.call(box, vectors, notation);
+        if (beforeRoll) {
+            beforeRoll.call(box, vectors, notation);
+        }
         if (afterRoll) {
             box.clear();
             box.roll(vectors, function(result) {
-                if (afterRoll) afterRoll.call(box, notation, result);
+                if (afterRoll) {
+                    afterRoll.call(box, notation, result);
+                }
                 box.rolling = false;
             });
         }
     }
 
 }).apply(teal.dice = teal.dice || {});
-
- 
