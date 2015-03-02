@@ -567,7 +567,7 @@
         this.renderer.render(this.scene, this.camera);
     }
 
-    this.dice_box.prototype.generate_vectors = function(notation, coords, boost) {
+    this.dice_box.prototype.generate_vectors = function(rollSpec, coords, boost) {
         function make_random_vector(coords) {
             var random_angle = rnd() * Math.PI / 5 - Math.PI / 5 / 2;
             var vec = {
@@ -580,7 +580,7 @@
         }
 
         var vectors = [];
-        for (var i in notation.set) {
+        for (var i in rollSpec.set) {
             var vec = make_random_vector(coords);
             var pos = {
                 x: this.w * (vec.x > 0 ? -1 : 1) * 0.9,
@@ -591,7 +591,7 @@
             if (projector > 1.0) pos.y /= projector; else pos.x *= projector;
             var velvec = make_random_vector(coords);
             var velocity = { x: velvec.x * boost, y: velvec.y * boost, z: -10 };
-            var inertia = dieInfo[notation.set[i].type].inertia;
+            var inertia = dieInfo[rollSpec.set[i].type].inertia;
             var angle = {
                 x: -(rnd() * vec.y * 5 + inertia * vec.y),
                 y: rnd() * vec.x * 5 + inertia * vec.x,
@@ -599,9 +599,9 @@
             };
             var axis = { x: rnd(), y: rnd(), z: rnd(), a: rnd() };
             vectors.push({
-                set: notation.set[i].type,
-                color: notation.set[i].color,
-                labelColor: notation.set[i].labelColor,
+                set: rollSpec.set[i].type,
+                color: rollSpec.set[i].color,
+                labelColor: rollSpec.set[i].labelColor,
                 pos: pos,
                 velocity: velocity,
                 angle: angle,
@@ -707,20 +707,10 @@
 
             var time_int = (new Date()).getTime() - box.mouse_time;
             if (time_int > 2000) time_int = 2000;
-            coords.x /= dist; coords.y /= dist;
             var boost = Math.sqrt((2500 - time_int) / 2500) * dist * 2;
-            var vectors = box.generate_vectors(dieSpec, coords, boost);
-            box.rolling = true;
-            if (before_roll) {
-                before_roll.call(box, vectors, notation);
-            }
-            if (after_roll) {
-                box.clear();
-                box.roll(vectors, function(result) {
-                    if (after_roll) after_roll.call(box, notation, result);
-                    box.rolling = false;
-                });
-            }
+            coords.x /= dist; coords.y /= dist;
+
+            rollDice(box, dieSpec, coords, boost, before_roll, after_roll);
         });
     }
 
@@ -729,26 +719,39 @@
         $t.bind(button, ['mouseup', 'touchend', 'touchcancel'], function(ev) {
             if (box.rolling) return;
             ev.stopPropagation();
-            var vector = { x: (rnd() * 2 - 1) * box.w, y: -(rnd() * 2 - 1) * box.h };
-            var dist = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
+            var coords = {x: (rnd() * 2 - 1) * box.w,
+                          y: -(rnd() * 2 - 1) * box.h};
+            var dist = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
             var notation = notation_getter.call(box);
             if (notation.set.length == 0) return;
-
-            vector.x /= dist; vector.y /= dist;
             var boost = (rnd() + 3) * dist;
-            var vectors = box.generate_vectors(notation, vector, boost);
-            box.rolling = true;
-            if (before_roll) before_roll.call(box, vectors, notation);
-            if (after_roll) {
-                box.clear();
-                box.roll(vectors, function(result) {
-                    if (after_roll) after_roll.call(box, notation, result);
-                    box.rolling = false;
-                });
-            }
+            coords.x /= dist; coords.y /= dist;
+
+            var dieSet = notation.set.map(function(dieType) {
+                return {
+                    type: dieType,
+                    color: "#aa0000",
+                    labelColor: "#ffffff"
+                };
+            });
+            var dieSpec = {set: dieSet, constant: notation.constant};
+
+            rollDice(box, dieSpec, coords, boost, before_roll, after_roll);
         });
     }
 
+    function rollDice(box, notation, coords, boost, before_roll, after_roll) {
+        var vectors = box.generate_vectors(notation, coords, boost);
+        box.rolling = true;
+        if (before_roll) before_roll.call(box, vectors, notation);
+        if (after_roll) {
+            box.clear();
+            box.roll(vectors, function(result) {
+                if (after_roll) after_roll.call(box, notation, result);
+                box.rolling = false;
+            });
+        }
+    }
 
 }).apply(teal.dice = teal.dice || {});
 
