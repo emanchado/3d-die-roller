@@ -86,7 +86,9 @@
 
     function _createDiceMaterials(face_labels, margin, labelColor, dieColor) {
         function create_text_texture(text, color, back_color) {
-            if (text === undefined) return null;
+            if (text === undefined) {
+                return null;
+            }
             var canvas = document.createElement("canvas");
             var context = canvas.getContext("2d");
             var size = scale / 2;
@@ -99,7 +101,7 @@
             context.textBaseline = "middle";
             context.fillStyle = color;
             context.fillText(text, canvas.width / 2, canvas.height / 2);
-            if (text == '6' || text == '9') {
+            if (text === '6' || text === '9') {
                 context.fillText('  .', canvas.width / 2, canvas.height / 2);
             }
             var texture = new THREE.Texture(canvas);
@@ -122,7 +124,9 @@
 
     function create_dice_materials(face_labels, margin, labelColor, dieColor) {
         function create_text_texture(text, color, back_color) {
-            if (text === undefined) return null;
+            if (text === undefined) {
+                return null;
+            }
             var canvas = document.createElement("canvas");
             var context = canvas.getContext("2d");
             var size = scale / 2;
@@ -135,7 +139,7 @@
             context.textBaseline = "middle";
             context.fillStyle = color;
             context.fillText(text, canvas.width / 2, canvas.height / 2);
-            if (text == '6' || text == '9') {
+            if (text === '6' || text === '9') {
                 context.fillText('  .', canvas.width / 2, canvas.height / 2);
             }
             var texture = new THREE.Texture(canvas);
@@ -322,23 +326,40 @@
         var ret = { set: [], constant: 0 }, res;
         while (res = dr.exec(notation)) {
             var command = res[2];
-            if (command != 'd') continue;
-            var count = parseInt(res[1]);
-            if (res[1] == '') count = 1;
+            if (command !== 'd') {
+                continue;
+            }
+            var count = parseInt(res[1], 10);
+            if (res[1] === '') {
+                count = 1;
+            }
             var type = 'd' + res[3];
-            if (known_types.indexOf(type) == -1) continue;
-            while (count--) ret.set.push(type);
-            if (res[5]) ret.constant += parseInt(res[5]);
+            if (known_types.indexOf(type) === -1) {
+                continue;
+            }
+            while (count--) {
+                ret.set.push(type);
+            }
+            if (res[5]) {
+                ret.constant += parseInt(res[5], 10);
+            }
         }
         return ret;
     }
 
     this.stringify_notation = function(nn) {
         var dict = {}, notation = '';
-        for (var i in nn.set) 
-            if (!dict[nn.set[i]]) dict[nn.set[i]] = 1; else ++dict[nn.set[i]];
+        for (var i in nn.set) {
+            if (!dict[nn.set[i]]) {
+                dict[nn.set[i]] = 1;
+            } else {
+                ++dict[nn.set[i]];
+            }
+        }
         for (var i in dict) {
-            if (notation.length) notation += ' + ';
+            if (notation.length) {
+                notation += ' + ';
+            }
             notation += dict[i] + i;
         }
         if (nn.constant) notation += ' + ' + nn.constant;
