@@ -45,7 +45,7 @@ function diceInitialize(container, w, h) {
     function afterRoll(notation, result) {
         var res = result.join(' ');
         if (notation.constant) res += ' +' + notation.constant;
-        if (result.length > 1) res += ' = ' + 
+        if (result.length > 1) res += ' = ' +
                 (result.reduce(function(s, a) { return s + a; }) + notation.constant);
         label.innerHTML = res;
         infoDiv.style.display = 'inline-block';
