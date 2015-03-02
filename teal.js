@@ -86,14 +86,14 @@ teal.unbind = function(sel, eventname, func, bubble) {
 }
 
 teal.one = function(sel, eventname, func, bubble) {
-    var one_func = function(e) {
+    var oneFunc = function(e) {
         func(e);
-        teal.unbind(sel, eventname, one_func, bubble);
+        teal.unbind(sel, eventname, oneFunc, bubble);
     };
-    teal.bind(sel, eventname, one_func, bubble);
+    teal.bind(sel, eventname, oneFunc, bubble);
 }
 
-teal.raise_event = function(sel, eventname, bubble, cancelable) {
+teal.raiseEvent = function(sel, eventname, bubble, cancelable) {
     var evt = document.createEvent('UIEvents');
     evt.initEvent(eventname, bubble == undefined ? true : bubble,
             cancelable == undefined ? true : cancelable);
@@ -101,7 +101,7 @@ teal.raise_event = function(sel, eventname, bubble, cancelable) {
 }
 
 if (navigator.appName == 'Microsoft Internet Explorer') {
-    teal.get_elements_by_class = function(classes, node) {
+    teal.getElementsByClass = function(classes, node) {
         var node = node || document,
             list = node.getElementsByTagName('*'),
             cl = classes.split(/\s+/),
@@ -120,7 +120,7 @@ if (navigator.appName == 'Microsoft Internet Explorer') {
     }
 }
 else {
-    teal.get_elements_by_class = function(classes, node) {
+    teal.getElementsByClass = function(classes, node) {
         return (node || document).getElementsByClassName(classes);
     }
 }
@@ -145,7 +145,7 @@ teal.uuid = function() {
     });
 }
 
-teal.get_url_params = function() {
+teal.getUrlParams = function() {
     var params = window.location.search.substring(1).split("&");
     var res = {};
     for (var i in params) {

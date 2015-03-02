@@ -2,26 +2,26 @@
 
 (function(dice) {
 
-    var random_storage = [], use_random_storage = true;
+    var randomStorage = [], useRandomStorage = true;
 
     function rnd() {
-        if (!random_storage.length && use_random_storage) {
+        if (!randomStorage.length && useRandomStorage) {
             try {
-                var random_response = $t.rpc({ method: "random", n: 512 });
-                if (!random_response.error) {
-                    random_storage = random_response.result.random.data;
+                var randomResponse = $t.rpc({ method: "random", n: 512 });
+                if (!randomResponse.error) {
+                    randomStorage = randomResponse.result.random.data;
                 }
                 else {
-                    use_random_storage = false;
+                    useRandomStorage = false;
                 }
             } catch (e) {
-                use_random_storage = false;
+                useRandomStorage = false;
             }
         }
-        return random_storage.length ? random_storage.pop() : Math.random();
+        return randomStorage.length ? randomStorage.pop() : Math.random();
     }
 
-    function create_shape(vertices, faces, radius) {
+    function createShape(vertices, faces, radius) {
         var cv = [], cf = [];
         for (var i = 0; i < vertices.length; ++i) {
             var v = vertices[i];
@@ -35,7 +35,7 @@
         return new CANNON.ConvexPolyhedron(cv, cf);
     }
 
-    function make_geom(vertices, faces, radius, tab, af) {
+    function makeGeom(vertices, faces, radius, tab, af) {
         var geom = new THREE.Geometry();
         for (var i = 0; i < vertices.length; ++i) {
             var vertex = (new THREE.Vector3()).fromArray(vertices[i]).normalize().multiplyScalar(radius);
@@ -62,16 +62,17 @@
         return geom;
     }
 
-    function create_geom(vertices, faces, radius, tab, af) {
-        var geom = make_geom(vertices, faces, radius, tab, af);
-        geom.cannon_shape = create_shape(vertices, faces, radius);
+    function createDieGeom(vertices, faces, radius, tab, af) {
+        var geom = makeGeom(vertices, faces, radius, tab, af);
+        geom.cannonShape = createShape(vertices, faces, radius);
         return geom;
     }
 
-    var standard_d20_dice_face_labels = [' ', '0', '1', '2', '3', '4', '5', '6', '7', '8',
-                                         '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20'];
-    var standard_d100_dice_face_labels = [' ', '00', '10', '20', '30', '40', '50',
-                                          '60', '70', '80', '90'];
+    var d20Labels = [' ', '0', '1', '2', '3', '4', '5', '6', '7', '8',
+                     '9', '10', '11', '12', '13', '14', '15', '16', '17',
+                     '18', '19', '20'];
+    var d100Labels = [' ', '00', '10', '20', '30', '40', '50',
+                      '60', '70', '80', '90'];
 
     function createDieMaterials(type, labelColor, dieColor) {
         if (type === 'd4') {
@@ -86,8 +87,8 @@
         }
     }
 
-    function _createDieMaterials(face_labels, margin, labelColor, dieColor) {
-        function create_text_texture(text, color, back_color) {
+    function _createDieMaterials(faceLabels, margin, labelColor, dieColor) {
+        function createTextTexture(text, labelColor, dieColor) {
             if (text === undefined) {
                 return null;
             }
@@ -97,11 +98,11 @@
             canvas.width = size + margin;
             canvas.height = size + margin;
             context.font = size + "pt Arial";
-            context.fillStyle = back_color;
+            context.fillStyle = dieColor;
             context.fillRect(0, 0, canvas.width, canvas.height);
             context.textAlign = "center";
             context.textBaseline = "middle";
-            context.fillStyle = color;
+            context.fillStyle = labelColor;
             context.fillText(text, canvas.width / 2, canvas.height / 2);
             if (text === '6' || text === '9') {
                 context.fillText('  .', canvas.width / 2, canvas.height / 2);
@@ -111,51 +112,13 @@
             return texture;
         }
         var materials = [];
-        for (var i = 0; i < face_labels.length; ++i) {
+        for (var i = 0; i < faceLabels.length; ++i) {
             materials.push(
                 new THREE.MeshPhongMaterial(
-                    $t.copyto(material_options,
-                              {map: create_text_texture(face_labels[i],
-                                                        labelColor,
-                                                        dieColor)})
-                )
-            );
-        }
-        return materials;
-    }
-
-    function create_dice_materials(face_labels, margin, labelColor, dieColor) {
-        function create_text_texture(text, color, back_color) {
-            if (text === undefined) {
-                return null;
-            }
-            var canvas = document.createElement("canvas");
-            var context = canvas.getContext("2d");
-            var size = scale / 2;
-            canvas.width = size + margin;
-            canvas.height = size + margin;
-            context.font = size + "pt Arial";
-            context.fillStyle = back_color;
-            context.fillRect(0, 0, canvas.width, canvas.height);
-            context.textAlign = "center";
-            context.textBaseline = "middle";
-            context.fillStyle = color;
-            context.fillText(text, canvas.width / 2, canvas.height / 2);
-            if (text === '6' || text === '9') {
-                context.fillText('  .', canvas.width / 2, canvas.height / 2);
-            }
-            var texture = new THREE.Texture(canvas);
-            texture.needsUpdate = true;
-            return texture;
-        }
-        var materials = [];
-        for (var i = 0; i < face_labels.length; ++i) {
-            materials.push(
-                new THREE.MeshPhongMaterial(
-                    $t.copyto(material_options,
-                              {map: create_text_texture(face_labels[i],
-                                                        labelColor,
-                                                        dieColor)})
+                    $t.copyto(materialOptions,
+                              {map: createTextTexture(faceLabels[i],
+                                                      labelColor,
+                                                      dieColor)})
                 )
             );
         }
@@ -163,7 +126,7 @@
     }
 
     function createD4Materials(size, margin, labelColor, dieColor) {
-        function create_d4_text(text, labelColor, dieColor) {
+        function createD4Text(text, labelColor, dieColor) {
             var canvas = document.createElement("canvas");
             var context = canvas.getContext("2d");
             canvas.width = size + margin;
@@ -189,48 +152,48 @@
         var materials = [];
         var labels = [[], [0, 0, 0], [2, 4, 3], [1, 3, 4], [2, 1, 4], [1, 2, 3]];
         for (var i = 0; i < labels.length; ++i) {
-            materials.push(new THREE.MeshPhongMaterial($t.copyto(material_options,
-                                                                 { map: create_d4_text(labels[i], labelColor, dieColor) })));
+            materials.push(new THREE.MeshPhongMaterial($t.copyto(materialOptions,
+                                                                 { map: createD4Text(labels[i], labelColor, dieColor) })));
         }
         return materials;
     }
 
     function createDieGeometry(type, radius) {
         var geometryCreators = {
-            d4: create_d4_geometry,
-            d6: create_d6_geometry,
-            d8: create_d8_geometry,
-            d10: create_d10_geometry,
-            d12: create_d12_geometry,
-            d20: create_d20_geometry,
-            d100: create_d10_geometry
+            d4: createD4Geometry,
+            d6: createD6Geometry,
+            d8: createD8Geometry,
+            d10: createD10Geometry,
+            d12: createD12Geometry,
+            d20: createD20Geometry,
+            d100: createD10Geometry
         };
 
         return geometryCreators[type](radius);
     }
 
-    function create_d4_geometry(radius) {
+    function createD4Geometry(radius) {
         var vertices = [[1, 1, 1], [-1, -1, 1], [-1, 1, -1], [1, -1, -1]];
         var faces = [[1, 0, 2, 1], [0, 1, 3, 2], [0, 3, 2, 3], [1, 2, 3, 4]];
-        return create_geom(vertices, faces, radius, -0.1, Math.PI * 7 / 6);
+        return createDieGeom(vertices, faces, radius, -0.1, Math.PI * 7 / 6);
     }
 
-    function create_d6_geometry(radius) {
+    function createD6Geometry(radius) {
         var vertices = [[-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
                         [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]];
         var faces = [[0, 3, 2, 1, 1], [1, 2, 6, 5, 2], [0, 1, 5, 4, 3],
                      [3, 7, 6, 2, 4], [0, 4, 7, 3, 5], [4, 5, 6, 7, 6]];
-        return create_geom(vertices, faces, radius, 0.1, Math.PI / 4);
+        return createDieGeom(vertices, faces, radius, 0.1, Math.PI / 4);
     }
 
-    function create_d8_geometry(radius) {
+    function createD8Geometry(radius) {
         var vertices = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
         var faces = [[0, 2, 4, 1], [0, 4, 3, 2], [0, 3, 5, 3], [0, 5, 2, 4], [1, 3, 4, 5],
                      [1, 4, 2, 6], [1, 2, 5, 7], [1, 5, 3, 8]];
-        return create_geom(vertices, faces, radius, 0, -Math.PI / 4 / 2);
+        return createDieGeom(vertices, faces, radius, 0, -Math.PI / 4 / 2);
     }
 
-    function create_d10_geometry(radius) {
+    function createD10Geometry(radius) {
         var a = Math.PI * 2 / 10, k = Math.cos(a), h = 0.105, v = -1;
         var vertices = [];
         for (var i = 0, b = 0; i < 10; ++i, b += a) {
@@ -241,10 +204,10 @@
                      [8, 6, 10, 5], [9, 1, 11, 6], [2, 0, 10, 7], [3, 5, 11, 8], [6, 4, 10, 9],
                      [1, 0, 2, v], [1, 2, 3, v], [3, 2, 4, v], [3, 4, 5, v], [5, 4, 6, v],
                      [5, 6, 7, v], [7, 6, 8, v], [7, 8, 9, v], [9, 8, 0, v], [9, 0, 1, v]];
-        return create_geom(vertices, faces, radius, 0, Math.PI * 6 / 5);
+        return createDieGeom(vertices, faces, radius, 0, Math.PI * 6 / 5);
     }
 
-    function create_d12_geometry(radius) {
+    function createD12Geometry(radius) {
         var p = (1 + Math.sqrt(5)) / 2, q = 1 / p;
         var vertices = [[0, q, p], [0, q, -p], [0, -q, p], [0, -q, -p], [p, 0, q],
                         [p, 0, -q], [-p, 0, q], [-p, 0, -q], [q, p, 0], [q, -p, 0], [-q, p, 0],
@@ -253,10 +216,10 @@
         var faces = [[2, 14, 4, 12, 0, 1], [15, 9, 11, 19, 3, 2], [16, 10, 17, 7, 6, 3], [6, 7, 19, 11, 18, 4],
                      [6, 18, 2, 0, 16, 5], [18, 11, 9, 14, 2, 6], [1, 17, 10, 8, 13, 7], [1, 13, 5, 15, 3, 8],
                      [13, 8, 12, 4, 5, 9], [5, 4, 14, 9, 15, 10], [0, 12, 8, 10, 16, 11], [3, 19, 7, 17, 1, 12]];
-        return create_geom(vertices, faces, radius, 0.2, -Math.PI / 4 / 2);
+        return createDieGeom(vertices, faces, radius, 0.2, -Math.PI / 4 / 2);
     }
 
-    function create_d20_geometry(radius) {
+    function createD20Geometry(radius) {
         var t = (1 + Math.sqrt(5)) / 2;
         var vertices = [[-1, t, 0], [1, t, 0 ], [-1, -t, 0], [1, -t, 0],
                         [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
@@ -265,12 +228,12 @@
                      [1, 5, 9, 6], [5, 11, 4, 7], [11, 10, 2, 8], [10, 7, 6, 9], [7, 1, 8, 10],
                      [3, 9, 4, 11], [3, 4, 2, 12], [3, 2, 6, 13], [3, 6, 8, 14], [3, 8, 9, 15],
                      [4, 9, 5, 16], [2, 4, 11, 17], [6, 2, 10, 18], [8, 6, 7, 19], [9, 8, 1, 20]];
-        return create_geom(vertices, faces, radius, -0.2, -Math.PI / 4 / 2);
+        return createDieGeom(vertices, faces, radius, -0.2, -Math.PI / 4 / 2);
     }
 
     var scale = 50;
     var chamfer = 0.6;
-    var material_options = {
+    var materialOptions = {
         specular: '#171d1f',
         color: '#ffffff',
         emissive: '#000000',
@@ -280,22 +243,22 @@
     var defaultLabelColor = '#aaaaaa';
     var defaultDieColor = '#202020';
     var d4MaterialCache, d100MaterialCache;
-    var known_types = ['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100'];
+    var knownDieTypes = ['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100'];
 
     var dieInfo = {
         d4: {mass: 300, inertia: 5, radiusFactor: 1.2, marginFactor: null},
         d6: {mass: 300, inertia: 13, radiusFactor: 0.9, marginFactor: 1,
-             labels: standard_d20_dice_face_labels},
+             labels: d20Labels},
         d8: {mass: 340, inertia: 10, radiusFactor: 1, marginFactor: 1,
-             labels: standard_d20_dice_face_labels},
+             labels: d20Labels},
         d10: {mass: 340, inertia: 10, radiusFactor: 0.9, marginFactor: 1,
-              labels: standard_d20_dice_face_labels},
+              labels: d20Labels},
         d12: {mass: 340, inertia: 10, radiusFactor: 0.9, marginFactor: 1,
-              labels: standard_d20_dice_face_labels},
+              labels: d20Labels},
         d20: {mass: 340, inertia: 10, radiusFactor: 1, marginFactor: 1,
-              labels: standard_d20_dice_face_labels},
+              labels: d20Labels},
         d100: {mass: 340, inertia: 10, radiusFactor: 0.9, marginFactor: 1.5,
-               labels: standard_d100_dice_face_labels}
+               labels: d100Labels}
     };
     var dieMaterialCache = {}, dieGeometryCache = {};
 
@@ -324,7 +287,7 @@
                               dieMaterialCache[dieSig]);
     }
 
-    this.parse_notation = function(notation) {
+    this.parseNotation = function(notation) {
         var dr = /\s*(\d*)([a-z]+)(\d+)(\s*\+\s*(\d+)){0,1}\s*(\+|$)/gi;
         var ret = { set: [], constant: 0 }, res;
         while (res = dr.exec(notation)) {
@@ -337,7 +300,7 @@
                 count = 1;
             }
             var type = 'd' + res[3];
-            if (known_types.indexOf(type) === -1) {
+            if (knownDieTypes.indexOf(type) === -1) {
                 continue;
             }
             while (count--) {
@@ -350,7 +313,7 @@
         return ret;
     }
 
-    this.stringify_notation = function(nn) {
+    this.stringifyNotation = function(nn) {
         var dict = {}, notation = '';
         for (var i in nn.set) {
             if (!dict[nn.set[i]]) {
@@ -369,12 +332,12 @@
         return notation;
     }
 
-    this.dice_box = function(container, dimentions) {
+    this.dieBox = function(container, dimensions) {
         this.cw = container.clientWidth / 2;
         this.ch = container.clientHeight / 2;
-        if (dimentions) {
-            this.w = dimentions.w;
-            this.h = dimentions.h;
+        if (dimensions) {
+            this.w = dimensions.w;
+            this.h = dimensions.h;
         }
         else {
             this.w = this.cw;
@@ -382,7 +345,7 @@
         }
         this.aspect = Math.min(this.cw / this.w, this.ch / this.h);
         scale = Math.sqrt(this.w * this.w + this.h * this.h) / 13;
-        this.use_adapvite_timestep = true;
+        this.useAdaptiveTimestep = true;
 
         this.renderer = window.WebGLRenderingContext
             ? new THREE.WebGLRenderer({ antialias: true })
@@ -422,55 +385,55 @@
         light.shadowMapHeight = 1024;
         this.scene.add(light);
 
-        this.dice_body_material = new CANNON.Material();
-        var desk_body_material = new CANNON.Material();
-        var barrier_body_material = new CANNON.Material();
+        this.dieBodyMaterial = new CANNON.Material();
+        var deskBodyMaterial = new CANNON.Material();
+        var barrierBodyMaterial = new CANNON.Material();
         this.world.addContactMaterial(new CANNON.ContactMaterial(
-            desk_body_material, this.dice_body_material, 0.01, 0.5));
+            deskBodyMaterial, this.dieBodyMaterial, 0.01, 0.5));
         this.world.addContactMaterial(new CANNON.ContactMaterial(
-            barrier_body_material, this.dice_body_material, 0, 1.0));
+            barrierBodyMaterial, this.dieBodyMaterial, 0, 1.0));
         this.world.addContactMaterial(new CANNON.ContactMaterial(
-            this.dice_body_material, this.dice_body_material, 0, 0.5));
+            this.dieBodyMaterial, this.dieBodyMaterial, 0, 0.5));
 
         this.desk = new THREE.Mesh(new THREE.PlaneGeometry(this.w * 2, this.h * 2, 1, 1), 
                                    new THREE.MeshLambertMaterial({ color: 0xffffff }));
         this.desk.receiveShadow = true;
         this.scene.add(this.desk);
 
-        this.world.add(new CANNON.RigidBody(0, new CANNON.Plane(), desk_body_material));
+        this.world.add(new CANNON.RigidBody(0, new CANNON.Plane(), deskBodyMaterial));
         var barrier;
-        barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
+        barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrierBodyMaterial);
         barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
         barrier.position.set(0, this.h * 0.93, 0);
         this.world.add(barrier);
 
-        barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
+        barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrierBodyMaterial);
         barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
         barrier.position.set(0, -this.h * 0.93, 0);
         this.world.add(barrier);
 
-        barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
+        barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrierBodyMaterial);
         barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -Math.PI / 2);
         barrier.position.set(this.w * 0.93, 0, 0);
         this.world.add(barrier);
 
-        barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
+        barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrierBodyMaterial);
         barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 2);
         barrier.position.set(-this.w * 0.93, 0, 0);
         this.world.add(barrier);
 
-        this.last_time = 0;
+        this.lastTime = 0;
         this.running = false;
 
         this.renderer.render(this.scene, this.camera);
     }
 
-    this.dice_box.prototype.createDie = function(type, pos, velocity, angle, axis, labelColor, color) {
+    this.dieBox.prototype.createDie = function(type, pos, velocity, angle, axis, labelColor, color) {
         var dice = createDie(type, labelColor, color);
         dice.castShadow = true;
-        dice.dice_type = type;
+        dice.dieType = type;
         dice.body = new CANNON.RigidBody(dieInfo[type].mass,
-                                         dice.geometry.cannon_shape, this.dice_body_material);
+                                         dice.geometry.cannonShape, this.dieBodyMaterial);
         dice.body.position.set(pos.x, pos.y, pos.z);
         dice.body.quaternion.setFromAxisAngle(new CANNON.Vec3(axis.x, axis.y, axis.z), axis.a * Math.PI * 2);
         dice.body.angularVelocity.set(angle.x, angle.y, angle.z);
@@ -482,28 +445,28 @@
         this.world.add(dice.body);
     }
 
-    this.dice_box.prototype.check = function() {
+    this.dieBox.prototype.check = function() {
         var res = true;
         var e = 6;
         var time = (new Date()).getTime();
         if (time - this.running < 10000) {
             for (var i = 0; i < this.dices.length; ++i) {
                 var dice = this.dices[i];
-                if (dice.dice_stopped == true) continue;
+                if (dice.diceStopped == true) continue;
                 var a = dice.body.angularVelocity, v = dice.body.velocity;
                 if (Math.abs(a.x) < e && Math.abs(a.y) < e && Math.abs(a.z) < e &&
                     Math.abs(v.x) < e && Math.abs(v.y) < e && Math.abs(v.z) < e) {
-                    if (dice.dice_stopped) {
-                        if (time - dice.dice_stopped > 50) {
-                            dice.dice_stopped = true;
+                    if (dice.diceStopped) {
+                        if (time - dice.diceStopped > 50) {
+                            dice.diceStopped = true;
                             continue;
                         }
                     }
-                    else dice.dice_stopped = (new Date()).getTime();
+                    else dice.diceStopped = (new Date()).getTime();
                     res = false;
                 }
                 else {
-                    dice.dice_stopped = undefined;
+                    dice.diceStopped = undefined;
                     res = false;
 
                 }
@@ -513,28 +476,28 @@
             this.running = false;
             var values = [];
             for (var i in this.dices) {
-                var dice = this.dices[i], invert = dice.dice_type == 'd4' ? -1 : 1;
+                var dice = this.dices[i], invert = dice.dieType == 'd4' ? -1 : 1;
                 var intersects = (new THREE.Raycaster(
                     new THREE.Vector3(dice.position.x, dice.position.y, 200 * invert),
                     new THREE.Vector3(0, 0, -1 * invert))).intersectObjects([dice]);
                 var matindex = intersects[0].face.materialIndex - 1;
-                if (dice.dice_type == 'd100') matindex *= 10;
+                if (dice.dieType == 'd100') matindex *= 10;
                 values.push(matindex);
             }
             if (this.callback) this.callback.call(this, values);
         }
     }
 
-    this.dice_box.prototype.__animate = function(threadid) {
+    this.dieBox.prototype.__animate = function(threadid) {
         var time = (new Date()).getTime();
-        if (this.use_adapvite_timestep) {
-            var time_diff = (time - this.last_time) / 1000;
-            if (time_diff > 3) time_diff = 1 / 60;
-            while (time_diff > 1.1 / 60) {
+        if (this.useAdaptiveTimestep) {
+            var timeDiff = (time - this.lastTime) / 1000;
+            if (timeDiff > 3) timeDiff = 1 / 60;
+            while (timeDiff > 1.1 / 60) {
                 this.world.step(1 / 60);
-                time_diff -= 1 / 60;
+                timeDiff -= 1 / 60;
             }
-            this.world.step(time_diff);
+            this.world.step(timeDiff);
         }
         else {
             this.world.step(1 / 60);
@@ -547,7 +510,7 @@
             }
         }
         this.renderer.render(this.scene, this.camera);
-        this.last_time = this.last_time ? time : (new Date()).getTime();
+        this.lastTime = this.lastTime ? time : (new Date()).getTime();
         if (this.running == threadid) this.check();
         if (this.running == threadid) {
             (function(t, tid) {
@@ -556,7 +519,7 @@
         }
     }
 
-    this.dice_box.prototype.clear = function() {
+    this.dieBox.prototype.clear = function() {
         this.running = false;
         var die;
         while (die = this.dices.pop()) {
@@ -567,12 +530,12 @@
         this.renderer.render(this.scene, this.camera);
     }
 
-    this.dice_box.prototype.generate_vectors = function(rollSpec, coords, boost) {
-        function make_random_vector(coords) {
-            var random_angle = rnd() * Math.PI / 5 - Math.PI / 5 / 2;
+    this.dieBox.prototype.generateVectors = function(rollSpec, coords, boost) {
+        function makeRandomVector(coords) {
+            var randomAngle = rnd() * Math.PI / 5 - Math.PI / 5 / 2;
             var vec = {
-                x: coords.x * Math.cos(random_angle) - coords.y * Math.sin(random_angle),
-                y: coords.x * Math.sin(random_angle) + coords.y * Math.cos(random_angle)
+                x: coords.x * Math.cos(randomAngle) - coords.y * Math.sin(randomAngle),
+                y: coords.x * Math.sin(randomAngle) + coords.y * Math.cos(randomAngle)
             };
             if (vec.x == 0) vec.x = 0.01;
             if (vec.y == 0) vec.y = 0.01;
@@ -581,7 +544,7 @@
 
         var vectors = [];
         for (var i in rollSpec.set) {
-            var vec = make_random_vector(coords);
+            var vec = makeRandomVector(coords);
             var pos = {
                 x: this.w * (vec.x > 0 ? -1 : 1) * 0.9,
                 y: this.h * (vec.y > 0 ? -1 : 1) * 0.9,
@@ -589,7 +552,7 @@
             };
             var projector = Math.abs(vec.x / vec.y);
             if (projector > 1.0) pos.y /= projector; else pos.x *= projector;
-            var velvec = make_random_vector(coords);
+            var velvec = makeRandomVector(coords);
             var velocity = { x: velvec.x * boost, y: velvec.y * boost, z: -10 };
             var inertia = dieInfo[rollSpec.set[i].type].inertia;
             var angle = {
@@ -611,7 +574,7 @@
         return vectors;
     }
 
-    this.dice_box.prototype.roll = function(vectors, callback) {
+    this.dieBox.prototype.roll = function(vectors, callback) {
         this.clear();
         for (var i in vectors) {
             this.createDie(vectors[i].set,
@@ -624,32 +587,32 @@
         }
         this.callback = callback;
         this.running = (new Date()).getTime();
-        this.last_time = 0;
+        this.lastTime = 0;
         this.__animate(this.running);
     }
 
-    this.dice_box.prototype.__selector_animate = function(threadid) {
+    this.dieBox.prototype.__selectorAnimate = function(threadid) {
         var time = (new Date()).getTime();
-        var time_diff = (time - this.last_time) / 1000;
-        if (time_diff > 3) time_diff = 1 / 60;
-        var angle_change = 0.3 * time_diff * Math.PI * Math.min(24000 + threadid - time, 6000) / 6000;
-        if (angle_change < 0) this.running = false;
+        var timeDiff = (time - this.lastTime) / 1000;
+        if (timeDiff > 3) timeDiff = 1 / 60;
+        var angleChange = 0.3 * timeDiff * Math.PI * Math.min(24000 + threadid - time, 6000) / 6000;
+        if (angleChange < 0) this.running = false;
         for (var i in this.dices) {
-            this.dices[i].rotation.y += angle_change;
-            this.dices[i].rotation.x += angle_change / 4;
-            this.dices[i].rotation.z += angle_change / 10;
+            this.dices[i].rotation.y += angleChange;
+            this.dices[i].rotation.x += angleChange / 4;
+            this.dices[i].rotation.z += angleChange / 10;
         }
 
-        this.last_time = time;
+        this.lastTime = time;
         this.renderer.render(this.scene, this.camera);
         if (this.running == threadid) {
             (function(t, tid) {
-                requestAnimationFrame(function() { t.__selector_animate(tid); });
+                requestAnimationFrame(function() { t.__selectorAnimate(tid); });
             })(this, threadid);
         }
     }
 
-    this.dice_box.prototype.search_die_by_mouse = function(ev) {
+    this.dieBox.prototype.searchDieByMouse = function(ev) {
         var intersects = (new THREE.Raycaster(this.camera.position, 
                                               (new THREE.Vector3((ev.clientX - this.cw) / this.aspect,
                                                                  (ev.clientY - this.ch) / this.aspect, this.w / 9))
@@ -657,7 +620,7 @@
         if (intersects.length) return intersects[0].object.userData;
     }
 
-    this.dice_box.prototype.draw_selector = function() {
+    this.dieBox.prototype.drawSelector = function() {
         this.clear();
         var step = this.w / 4.5;
         this.pane = new THREE.Mesh(new THREE.PlaneGeometry(this.cw * 20, this.ch * 20, 1, 1), 
@@ -666,34 +629,32 @@
         this.pane.position.set(0, 0, 1);
         this.scene.add(this.pane);
 
-        var mouse_captured = false;
-
-        for (var i = 0, pos = -3; i < known_types.length; ++i, ++pos) {
-            var die = createDie(known_types[i]);
+        for (var i = 0, pos = -3; i < knownDieTypes.length; ++i, ++pos) {
+            var die = createDie(knownDieTypes[i]);
             die.position.set(pos * step, 0, step * 0.5);
             die.castShadow = true;
-            die.userData = known_types[i];
+            die.userData = knownDieTypes[i];
             this.dices.push(die); this.scene.add(die);
         }
 
         this.running = (new Date()).getTime();
-        this.last_time = 0;
-        this.__selector_animate(this.running);
+        this.lastTime = 0;
+        this.__selectorAnimate(this.running);
     }
 
-    this.dice_box.prototype.bind_mouse = function(container, notation_getter, before_roll, after_roll) {
+    this.dieBox.prototype.bindMouse = function(container, notationGetter, beforeRoll, afterRoll) {
         var box = this;
         $t.bind(container, ['mousedown', 'touchstart'], function(ev) {
-            box.mouse_time = (new Date()).getTime();
-            box.mouse_start = { x: ev.clientX, y: ev.clientY };
+            box.mouseTime = (new Date()).getTime();
+            box.mouseStart = { x: ev.clientX, y: ev.clientY };
         });
         $t.bind(container, ['mouseup', 'touchend', 'touchcancel'], function(ev) {
             if (box.rolling) return;
-            var coords = {x: ev.clientX - box.mouse_start.x,
-                          y: -(ev.clientY - box.mouse_start.y)};
+            var coords = {x: ev.clientX - box.mouseStart.x,
+                          y: -(ev.clientY - box.mouseStart.y)};
             var dist = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
             if (dist < Math.sqrt(box.w * box.h * 0.01)) return;
-            var notation = notation_getter.call(box);
+            var notation = notationGetter.call(box);
             if (notation.set.length == 0) return;
 
             var dieSet = notation.set.map(function(dieType) {
@@ -705,16 +666,16 @@
             });
             var dieSpec = {set: dieSet, constant: notation.constant};
 
-            var time_int = (new Date()).getTime() - box.mouse_time;
-            if (time_int > 2000) time_int = 2000;
-            var boost = Math.sqrt((2500 - time_int) / 2500) * dist * 2;
+            var timeInt = (new Date()).getTime() - box.mouseTime;
+            if (timeInt > 2000) timeInt = 2000;
+            var boost = Math.sqrt((2500 - timeInt) / 2500) * dist * 2;
             coords.x /= dist; coords.y /= dist;
 
-            rollDice(box, dieSpec, coords, boost, before_roll, after_roll);
+            rollDice(box, dieSpec, coords, boost, beforeRoll, afterRoll);
         });
     }
 
-    this.dice_box.prototype.bind_throw = function(button, notation_getter, before_roll, after_roll) {
+    this.dieBox.prototype.bindThrow = function(button, notationGetter, beforeRoll, afterRoll) {
         var box = this;
         $t.bind(button, ['mouseup', 'touchend', 'touchcancel'], function(ev) {
             if (box.rolling) return;
@@ -722,7 +683,7 @@
             var coords = {x: (rnd() * 2 - 1) * box.w,
                           y: -(rnd() * 2 - 1) * box.h};
             var dist = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
-            var notation = notation_getter.call(box);
+            var notation = notationGetter.call(box);
             if (notation.set.length == 0) return;
             var boost = (rnd() + 3) * dist;
             coords.x /= dist; coords.y /= dist;
@@ -736,18 +697,18 @@
             });
             var dieSpec = {set: dieSet, constant: notation.constant};
 
-            rollDice(box, dieSpec, coords, boost, before_roll, after_roll);
+            rollDice(box, dieSpec, coords, boost, beforeRoll, afterRoll);
         });
     }
 
-    function rollDice(box, notation, coords, boost, before_roll, after_roll) {
-        var vectors = box.generate_vectors(notation, coords, boost);
+    function rollDice(box, notation, coords, boost, beforeRoll, afterRoll) {
+        var vectors = box.generateVectors(notation, coords, boost);
         box.rolling = true;
-        if (before_roll) before_roll.call(box, vectors, notation);
-        if (after_roll) {
+        if (beforeRoll) beforeRoll.call(box, vectors, notation);
+        if (afterRoll) {
             box.clear();
             box.roll(vectors, function(result) {
-                if (after_roll) after_roll.call(box, notation, result);
+                if (afterRoll) afterRoll.call(box, notation, result);
                 box.rolling = false;
             });
         }
