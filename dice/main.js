@@ -60,7 +60,7 @@ function dice_initialize(container, w, h) {
             box.rolling = false;
             return;
         }
-        var name = box.search_dice_by_mouse(ev);
+        var name = box.search_die_by_mouse(ev);
         if (name != undefined) {
             var notation = $t.dice.parse_notation(set.value);
             notation.set.push(name);
