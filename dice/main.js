@@ -60,8 +60,52 @@ function diceInitialize(container, w, h) {
         infoDiv.style.display = 'inline-block';
     }
 
-    box.bindMouse(container, notationGetter, beforeRoll, afterRoll);
-    box.bindThrow($t.id('throw'), notationGetter, beforeRoll, afterRoll);
+    $t.bind(container, ['mousedown', 'touchstart'], function(ev) {
+        box.mouseTime = (new Date()).getTime();
+        box.mouseStart = { x: ev.clientX, y: ev.clientY };
+    });
+    $t.bind(container, ['mouseup', 'touchend', 'touchcancel'], function(ev) {
+        if (box.rolling) {
+            return;
+        }
+        var coords = {x: ev.clientX - box.mouseStart.x,
+                      y: -(ev.clientY - box.mouseStart.y)};
+        var dist = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
+        if (dist < Math.sqrt(box.w * box.h * 0.01)) {
+            return;
+        }
+
+        var dieSpec = set.dataset.fullDieProps || '{"set":[], "constant":0}';
+        var dieSet = JSON.parse(dieSpec);
+        if (dieSet.set.length === 0) {
+            return;
+        }
+
+        var timeInt = Math.min((new Date()).getTime() - box.mouseTime,
+                               2000);
+        var boost = Math.sqrt((2500 - timeInt) / 2500) * dist * 2;
+        coords.x /= dist; coords.y /= dist;
+
+        box.rollDice(dieSet, coords, boost, beforeRoll, afterRoll);
+    });
+
+    $t.bind($t.id('throw'), ['mouseup', 'touchend', 'touchcancel'], function(ev) {
+        if (box.rolling) {
+            return;
+        }
+        ev.stopPropagation();
+        var coords = {x: (box.rnd() * 2 - 1) * box.w,
+                      y: -(box.rnd() * 2 - 1) * box.h};
+        var dist = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
+        var notation = notationGetter.call(box);
+        if (notation.set.length === 0) {
+            return;
+        }
+        var boost = (box.rnd() + 3) * dist;
+        coords.x /= dist; coords.y /= dist;
+
+        box.rollDice(notation, coords, boost, beforeRoll, afterRoll);
+    });
 
     $t.bind(container, ['mouseup', 'touchend', 'touchcancel'], function(ev) {
         if (selectorDiv.style.display === 'none') {

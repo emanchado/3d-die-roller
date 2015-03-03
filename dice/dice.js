@@ -6,23 +6,6 @@
 
     var randomStorage = [], useRandomStorage = true;
 
-    function rnd() {
-        if (!randomStorage.length && useRandomStorage) {
-            try {
-                var randomResponse = $t.rpc({ method: "random", n: 512 });
-                if (!randomResponse.error) {
-                    randomStorage = randomResponse.result.random.data;
-                }
-                else {
-                    useRandomStorage = false;
-                }
-            } catch (e) {
-                useRandomStorage = false;
-            }
-        }
-        return randomStorage.length ? randomStorage.pop() : Math.random();
-    }
-
     function createShape(vertices, faces, radius) {
         var cv = [], cf = [];
         for (var i = 0; i < vertices.length; ++i) {
@@ -553,8 +536,9 @@
     };
 
     this.dieBox.prototype.generateVectors = function(rollSpec, coords, boost) {
+        var self = this;
         function makeRandomVector(coords) {
-            var randomAngle = rnd() * Math.PI / 5 - Math.PI / 5 / 2;
+            var randomAngle = self.rnd() * Math.PI / 5 - Math.PI / 5 / 2;
             var vec = {
                 x: coords.x * Math.cos(randomAngle) - coords.y * Math.sin(randomAngle),
                 y: coords.x * Math.sin(randomAngle) + coords.y * Math.cos(randomAngle)
@@ -570,7 +554,7 @@
             var pos = {
                 x: this.w * (vec.x > 0 ? -1 : 1) * 0.9,
                 y: this.h * (vec.y > 0 ? -1 : 1) * 0.9,
-                z: rnd() * 200 + 200
+                z: self.rnd() * 200 + 200
             };
             var projector = Math.abs(vec.x / vec.y);
             if (projector > 1.0) {
@@ -582,11 +566,11 @@
             var velocity = { x: velvec.x * boost, y: velvec.y * boost, z: -10 };
             var inertia = dieInfo[rollSpec.set[i].type].inertia;
             var angle = {
-                x: -(rnd() * vec.y * 5 + inertia * vec.y),
-                y: rnd() * vec.x * 5 + inertia * vec.x,
+                x: -(self.rnd() * vec.y * 5 + inertia * vec.y),
+                y: self.rnd() * vec.x * 5 + inertia * vec.x,
                 z: 0
             };
-            var axis = { x: rnd(), y: rnd(), z: rnd(), a: rnd() };
+            var axis = { x: self.rnd(), y: self.rnd(), z: self.rnd(), a: self.rnd() };
             vectors.push({
                 set: rollSpec.set[i].type,
                 dieColor: rollSpec.set[i].dieColor,
@@ -673,72 +657,38 @@
         this.__selectorAnimate(this.running);
     };
 
-    this.dieBox.prototype.bindMouse = function(container, notationGetter, beforeRoll, afterRoll) {
-        var box = this;
-        $t.bind(container, ['mousedown', 'touchstart'], function(ev) {
-            box.mouseTime = (new Date()).getTime();
-            box.mouseStart = { x: ev.clientX, y: ev.clientY };
-        });
-        $t.bind(container, ['mouseup', 'touchend', 'touchcancel'], function(ev) {
-            if (box.rolling) {
-                return;
-            }
-            var coords = {x: ev.clientX - box.mouseStart.x,
-                          y: -(ev.clientY - box.mouseStart.y)};
-            var dist = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
-            if (dist < Math.sqrt(box.w * box.h * 0.01)) {
-                return;
-            }
-            var notation = notationGetter.call(box);
-            if (notation.set.length === 0) {
-                return;
-            }
-
-            var timeInt = Math.min((new Date()).getTime() - box.mouseTime,
-                                   2000);
-            var boost = Math.sqrt((2500 - timeInt) / 2500) * dist * 2;
-            coords.x /= dist; coords.y /= dist;
-
-            rollDice(box, notation, coords, boost, beforeRoll, afterRoll);
-        });
-    };
-
-    this.dieBox.prototype.bindThrow = function(button, notationGetter, beforeRoll, afterRoll) {
-        var box = this;
-        $t.bind(button, ['mouseup', 'touchend', 'touchcancel'], function(ev) {
-            if (box.rolling) {
-                return;
-            }
-            ev.stopPropagation();
-            var coords = {x: (rnd() * 2 - 1) * box.w,
-                          y: -(rnd() * 2 - 1) * box.h};
-            var dist = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
-            var notation = notationGetter.call(box);
-            if (notation.set.length === 0) {
-                return;
-            }
-            var boost = (rnd() + 3) * dist;
-            coords.x /= dist; coords.y /= dist;
-
-            rollDice(box, notation, coords, boost, beforeRoll, afterRoll);
-        });
-    };
-
-    function rollDice(box, notation, coords, boost, beforeRoll, afterRoll) {
-        var vectors = box.generateVectors(notation, coords, boost);
-        box.rolling = true;
+    this.dieBox.prototype.rollDice = function(notation, coords, boost, beforeRoll, afterRoll) {
+        var vectors = this.generateVectors(notation, coords, boost);
+        this.rolling = true;
         if (beforeRoll) {
-            beforeRoll.call(box, vectors, notation);
+            beforeRoll.call(this, vectors, notation);
         }
         if (afterRoll) {
-            box.clear();
-            box.roll(vectors, function(result) {
+            this.clear();
+            this.roll(vectors, function(result) {
                 if (afterRoll) {
-                    afterRoll.call(box, notation, result);
+                    afterRoll.call(this, notation, result);
                 }
-                box.rolling = false;
+                this.rolling = false;
             });
         }
-    }
+    };
+
+    this.dieBox.prototype.rnd = function() {
+        if (!randomStorage.length && useRandomStorage) {
+            try {
+                var randomResponse = $t.rpc({ method: "random", n: 512 });
+                if (!randomResponse.error) {
+                    randomStorage = randomResponse.result.random.data;
+                }
+                else {
+                    useRandomStorage = false;
+                }
+            } catch (e) {
+                useRandomStorage = false;
+            }
+        }
+        return randomStorage.length ? randomStorage.pop() : Math.random();
+    };
 
 }).apply(teal.dice = teal.dice || {});
