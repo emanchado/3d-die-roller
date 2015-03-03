@@ -124,14 +124,5 @@ function diceInitialize(container, w, h) {
         }
     });
 
-    var params = $t.getUrlParams();
-    if (params.notation) {
-        set.value = params.notation;
-    }
-    if (params.roll) {
-        $t.raiseEvent($t.id('throw'), 'mouseup');
-    }
-    else {
-        showSelector();
-    }
+    showSelector();
 }
