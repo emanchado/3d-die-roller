@@ -645,12 +645,13 @@
         this.pane.position.set(0, 0, 1);
         this.scene.add(this.pane);
 
-        for (var i = 0, pos = -3; i < knownDieTypes.length; ++i, ++pos) {
-            var die = createDie(knownDieTypes[i]);
-            die.position.set(pos * step, 0, step * 0.5);
-            die.castShadow = true;
-            this.dice.push(die); this.scene.add(die);
-        }
+        var die1 = createDie('d10', '#202020', '#aaaaaa');
+        die1.position.set(step * -2, 0, step * 0.5);
+        this.dice.push(die1); this.scene.add(die1);
+
+        var die2 = createDie('d10', '#aaaaaa', '#880000');
+        die2.position.set(step * 2, 0, step * 0.5);
+        this.dice.push(die2); this.scene.add(die2);
 
         this.running = (new Date()).getTime();
         this.lastTime = 0;
