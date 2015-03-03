@@ -284,8 +284,13 @@
                 createDieMaterials(type, labelColor, dieColor)
             );
         }
-        return new THREE.Mesh(dieGeometryCache[type],
-                              dieMaterialCache[dieSig]);
+        var die = new THREE.Mesh(dieGeometryCache[type],
+                                 dieMaterialCache[dieSig]);
+        die.castShadow = true;
+        die.userData = {type: type,
+                        labelColor: labelColor,
+                        dieColor: dieColor};
+        return die;
     }
 
     this.parseNotation = function(notation) {
@@ -317,10 +322,10 @@
     this.stringifyNotation = function(nn) {
         var dict = {}, notation = '';
         for (var i in nn.set) {
-            if (!dict[nn.set[i]]) {
-                dict[nn.set[i]] = 1;
+            if (!dict[nn.set[i].type]) {
+                dict[nn.set[i].type] = 1;
             } else {
-                ++dict[nn.set[i]];
+                ++dict[nn.set[i].type];
             }
         }
         for (var i in dict) {
@@ -433,7 +438,6 @@
 
     this.dieBox.prototype.createDie = function(type, pos, velocity, angle, axis, labelColor, color) {
         var die = createDie(type, labelColor, color);
-        die.castShadow = true;
         die.dieType = type;
         die.body = new CANNON.RigidBody(dieInfo[type].mass,
                                         die.geometry.cannonShape, this.dieBodyMaterial);
@@ -585,7 +589,7 @@
             var axis = { x: rnd(), y: rnd(), z: rnd(), a: rnd() };
             vectors.push({
                 set: rollSpec.set[i].type,
-                color: rollSpec.set[i].color,
+                dieColor: rollSpec.set[i].dieColor,
                 labelColor: rollSpec.set[i].labelColor,
                 pos: pos,
                 velocity: velocity,
@@ -605,7 +609,7 @@
                            vectors[i].angle,
                            vectors[i].axis,
                            vectors[i].labelColor,
-                           vectors[i].color);
+                           vectors[i].dieColor);
         }
         this.callback = callback;
         this.running = (new Date()).getTime();
@@ -661,7 +665,6 @@
             var die = createDie(knownDieTypes[i]);
             die.position.set(pos * step, 0, step * 0.5);
             die.castShadow = true;
-            die.userData = knownDieTypes[i];
             this.dice.push(die); this.scene.add(die);
         }
 
@@ -691,21 +694,12 @@
                 return;
             }
 
-            var dieSet = notation.set.map(function(dieType) {
-                return {
-                    type: dieType,
-                    color: defaultDieColor,
-                    labelColor: defaultLabelColor
-                };
-            });
-            var dieSpec = {set: dieSet, constant: notation.constant};
-
             var timeInt = Math.min((new Date()).getTime() - box.mouseTime,
                                    2000);
             var boost = Math.sqrt((2500 - timeInt) / 2500) * dist * 2;
             coords.x /= dist; coords.y /= dist;
 
-            rollDice(box, dieSpec, coords, boost, beforeRoll, afterRoll);
+            rollDice(box, notation, coords, boost, beforeRoll, afterRoll);
         });
     };
 
@@ -726,16 +720,7 @@
             var boost = (rnd() + 3) * dist;
             coords.x /= dist; coords.y /= dist;
 
-            var dieSet = notation.set.map(function(dieType) {
-                return {
-                    type: dieType,
-                    color: "#aa0000",
-                    labelColor: "#ffffff"
-                };
-            });
-            var dieSpec = {set: dieSet, constant: notation.constant};
-
-            rollDice(box, dieSpec, coords, boost, beforeRoll, afterRoll);
+            rollDice(box, notation, coords, boost, beforeRoll, afterRoll);
         });
     };
 

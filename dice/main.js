@@ -44,7 +44,7 @@ function diceInitialize(container, w, h) {
     }
 
     function notationGetter() {
-        return $t.dice.parseNotation(set.value);
+        return JSON.parse(set.dataset.fullDieProps);
     }
 
     function afterRoll(notation, result) {
@@ -71,10 +71,13 @@ function diceInitialize(container, w, h) {
             box.rolling = false;
             return;
         }
-        var name = box.searchDieByMouse(ev);
-        if (name !== undefined) {
-            var notation = $t.dice.parseNotation(set.value);
-            notation.set.push(name);
+        var dieProps = box.searchDieByMouse(ev);
+        if (dieProps !== undefined) {
+            var notation = set.dataset.fullDieProps ?
+                    JSON.parse(set.dataset.fullDieProps) :
+                    {set: [], constant: 0};
+            notation.set.push(dieProps);
+            set.dataset.fullDieProps = JSON.stringify(notation);
             set.value = $t.dice.stringifyNotation(notation);
             onSetChange();
         }
