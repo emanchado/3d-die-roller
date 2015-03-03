@@ -358,7 +358,7 @@
         this.renderer.shadowMapSoft = true;
         this.renderer.setClearColor(0xffffff, 1);
 
-        this.dices = [];
+        this.dice = [];
         this.scene = new THREE.Scene();
         this.world = new CANNON.World();
 
@@ -432,20 +432,20 @@
     };
 
     this.dieBox.prototype.createDie = function(type, pos, velocity, angle, axis, labelColor, color) {
-        var dice = createDie(type, labelColor, color);
-        dice.castShadow = true;
-        dice.dieType = type;
-        dice.body = new CANNON.RigidBody(dieInfo[type].mass,
-                                         dice.geometry.cannonShape, this.dieBodyMaterial);
-        dice.body.position.set(pos.x, pos.y, pos.z);
-        dice.body.quaternion.setFromAxisAngle(new CANNON.Vec3(axis.x, axis.y, axis.z), axis.a * Math.PI * 2);
-        dice.body.angularVelocity.set(angle.x, angle.y, angle.z);
-        dice.body.velocity.set(velocity.x, velocity.y, velocity.z);
-        dice.body.linearDamping = 0.1;
-        dice.body.angularDamping = 0.1;
-        this.scene.add(dice);
-        this.dices.push(dice);
-        this.world.add(dice.body);
+        var die = createDie(type, labelColor, color);
+        die.castShadow = true;
+        die.dieType = type;
+        die.body = new CANNON.RigidBody(dieInfo[type].mass,
+                                        die.geometry.cannonShape, this.dieBodyMaterial);
+        die.body.position.set(pos.x, pos.y, pos.z);
+        die.body.quaternion.setFromAxisAngle(new CANNON.Vec3(axis.x, axis.y, axis.z), axis.a * Math.PI * 2);
+        die.body.angularVelocity.set(angle.x, angle.y, angle.z);
+        die.body.velocity.set(velocity.x, velocity.y, velocity.z);
+        die.body.linearDamping = 0.1;
+        die.body.angularDamping = 0.1;
+        this.scene.add(die);
+        this.dice.push(die);
+        this.world.add(die.body);
     };
 
     this.dieBox.prototype.check = function() {
@@ -453,8 +453,8 @@
         var e = 6;
         var time = (new Date()).getTime();
         if (time - this.running < 10000) {
-            for (var i = 0; i < this.dices.length; ++i) {
-                var dice = this.dices[i];
+            for (var i = 0; i < this.dice.length; ++i) {
+                var dice = this.dice[i];
                 if (dice.diceStopped === true) {
                     continue;
                 }
@@ -480,8 +480,8 @@
         if (res) {
             this.running = false;
             var values = [];
-            for (var i in this.dices) {
-                var dice = this.dices[i],
+            for (var i in this.dice) {
+                var dice = this.dice[i],
                     invert = dice.dieType === 'd4' ? -1 : 1;
                 var intersects = (new THREE.Raycaster(
                     new THREE.Vector3(dice.position.x, dice.position.y, 200 * invert),
@@ -536,7 +536,7 @@
     this.dieBox.prototype.clear = function() {
         this.running = false;
         var die;
-        while ((die = this.dices.pop())) {
+        while ((die = this.dice.pop())) {
             this.scene.remove(die); 
             if (die.body) {
                 this.world.remove(die.body);
@@ -623,10 +623,10 @@
         if (angleChange < 0) {
             this.running = false;
         }
-        for (var i in this.dices) {
-            this.dices[i].rotation.y += angleChange;
-            this.dices[i].rotation.x += angleChange / 4;
-            this.dices[i].rotation.z += angleChange / 10;
+        for (var i in this.dice) {
+            this.dice[i].rotation.y += angleChange;
+            this.dice[i].rotation.x += angleChange / 4;
+            this.dice[i].rotation.z += angleChange / 10;
         }
 
         this.lastTime = time;
@@ -642,7 +642,7 @@
         var intersects = (new THREE.Raycaster(this.camera.position, 
                                               (new THREE.Vector3((ev.clientX - this.cw) / this.aspect,
                                                                  (ev.clientY - this.ch) / this.aspect, this.w / 9))
-                                              .sub(this.camera.position).normalize())).intersectObjects(this.dices);
+                                              .sub(this.camera.position).normalize())).intersectObjects(this.dice);
         if (intersects.length) {
             return intersects[0].object.userData;
         }
@@ -662,7 +662,7 @@
             die.position.set(pos * step, 0, step * 0.5);
             die.castShadow = true;
             die.userData = knownDieTypes[i];
-            this.dices.push(die); this.scene.add(die);
+            this.dice.push(die); this.scene.add(die);
         }
 
         this.running = (new Date()).getTime();
