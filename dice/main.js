@@ -43,10 +43,6 @@ function diceInitialize(container, w, h) {
         selectorDiv.style.display = 'none';
     }
 
-    function notationGetter() {
-        return JSON.parse(set.dataset.fullDieProps);
-    }
-
     function afterRoll(notation, result) {
         var res = result.join(' ');
         if (notation.constant) {
@@ -97,14 +93,15 @@ function diceInitialize(container, w, h) {
         var coords = {x: (box.rnd() * 2 - 1) * box.w,
                       y: -(box.rnd() * 2 - 1) * box.h};
         var dist = Math.sqrt(coords.x * coords.x + coords.y * coords.y);
-        var notation = notationGetter.call(box);
-        if (notation.set.length === 0) {
+        var dieSpec = set.dataset.fullDieProps || '{"set":[], "constant":0}';
+        var dieSet = JSON.parse(dieSpec);
+        if (dieSet.set.length === 0) {
             return;
         }
         var boost = (box.rnd() + 3) * dist;
         coords.x /= dist; coords.y /= dist;
 
-        box.rollDice(notation, coords, boost, beforeRoll, afterRoll);
+        box.rollDice(dieSet, coords, boost, beforeRoll, afterRoll);
     });
 
     $t.bind(container, ['mouseup', 'touchend', 'touchcancel'], function(ev) {
