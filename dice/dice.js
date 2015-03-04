@@ -662,21 +662,19 @@
         this.__selectorAnimate(this.running);
     };
 
-    this.dieBox.prototype.rollDice = function(notation, coords, boost, beforeRoll, afterRoll) {
-        var vectors = this.generateVectors(notation, coords, boost);
+    this.dieBox.prototype.rollDice = function(rollSpec, coords, boost, beforeRoll, afterRoll) {
+        var vectors = this.generateVectors(rollSpec, coords, boost);
         this.rolling = true;
         if (beforeRoll) {
-            beforeRoll.call(this, vectors, notation);
+            beforeRoll.call(this, vectors, rollSpec);
         }
-        if (afterRoll) {
-            this.clear();
-            this.roll(vectors, function(result) {
-                if (afterRoll) {
-                    afterRoll.call(this, notation, result);
-                }
-                this.rolling = false;
-            });
-        }
+        this.clear();
+        this.roll(vectors, function(result) {
+            if (afterRoll) {
+                afterRoll.call(this, rollSpec, result);
+            }
+            this.rolling = false;
+        });
     };
 
     this.dieBox.prototype.rnd = function() {
