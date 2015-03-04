@@ -250,9 +250,10 @@
         return dieInfo[type].labels + dieColor + labelColor;
     }
 
-    function createDie(type, labelColor, dieColor) {
+    function createDie(type, labelColor, dieColor, extraUserData) {
         labelColor = labelColor || defaultLabelColor;
         dieColor = dieColor || defaultDieColor;
+        extraUserData = extraUserData || {};
 
         if (!dieGeometryCache[type]) {
             dieGeometryCache[type] = createDieGeometry(
@@ -273,6 +274,9 @@
         die.userData = {type: type,
                         labelColor: labelColor,
                         dieColor: dieColor};
+        for (var p in extraUserData) {
+            die.userData[p] = extraUserData[p];
+        }
         return die;
     }
 
