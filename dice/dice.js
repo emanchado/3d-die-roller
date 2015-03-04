@@ -649,11 +649,11 @@
         this.pane.position.set(0, 0, 1);
         this.scene.add(this.pane);
 
-        var die1 = createDie('d10', '#202020', '#aaaaaa');
+        var die1 = createDie('d10', '#202020', '#aaaaaa', {group: 'white'});
         die1.position.set(step * -2, 0, step * 0.5);
         this.dice.push(die1); this.scene.add(die1);
 
-        var die2 = createDie('d10', '#aaaaaa', '#880000');
+        var die2 = createDie('d10', '#aaaaaa', '#880000', {group: 'red'});
         die2.position.set(step * 2, 0, step * 0.5);
         this.dice.push(die2); this.scene.add(die2);
 

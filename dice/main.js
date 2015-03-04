@@ -43,16 +43,27 @@ function diceInitialize(container, w, h) {
         selectorDiv.style.display = 'none';
     }
 
-    function afterRoll(notation, result) {
-        var res = result.join(' ');
-        if (notation.constant) {
-            res += ' +' + notation.constant;
+    function afterRoll(dieSpec, results) {
+        var groups = {}, topScore = 0, topGroup = null;
+        for (var i = 0, len = dieSpec.set.length; i < len; i++) {
+            var currentGroup = dieSpec.set[i].group;
+            groups[currentGroup] = groups[currentGroup] || 0;
+            if ((results[i] || 10) < 6) {
+                groups[currentGroup]++;
+                if (groups[currentGroup] === topScore) {
+                    topGroup = null;
+                } else if (groups[currentGroup] > topScore) {
+                    topGroup = currentGroup;
+                    topScore = groups[currentGroup];
+                }
+            }
         }
-        if (result.length > 1) {
-            res += ' = ' +
-                (result.reduce(function(s, a) { return s + a; }) + notation.constant);
-        }
-        label.innerHTML = res;
+
+        var resultString = Object.keys(groups).map(function(group) {
+            return group + ": " + groups[group];
+        }).join("; ");
+        resultString += "<br/>Winner: " + (topGroup ? topGroup.toUpperCase() : "<i>none</i>");
+        label.innerHTML = resultString;
         infoDiv.style.display = 'inline-block';
     }
 
