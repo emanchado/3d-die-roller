@@ -46,23 +46,33 @@ function diceInitialize(container, w, h) {
     function afterRoll(dieSpec, results) {
         var groups = {}, topScore = 0, topGroup = null;
         for (var i = 0, len = dieSpec.set.length; i < len; i++) {
-            var currentGroup = dieSpec.set[i].group;
-            groups[currentGroup] = groups[currentGroup] || 0;
-            if ((results[i] || 10) < 6) {
-                groups[currentGroup]++;
-                if (groups[currentGroup] === topScore) {
+            var currentGroup = dieSpec.set[i].group,
+                currentRoll = (results[i] || 10);
+            groups[currentGroup] =
+                groups[currentGroup] || {total: 0, successRolls: [], numberRolls: 0};
+
+            groups[currentGroup].numberRolls++;
+            if (currentRoll < 6) {
+                groups[currentGroup].successRolls.push(currentRoll);
+                groups[currentGroup].total++;
+                if (groups[currentGroup].total === topScore) {
                     topGroup = null;
-                } else if (groups[currentGroup] > topScore) {
+                } else if (groups[currentGroup].total > topScore) {
                     topGroup = currentGroup;
-                    topScore = groups[currentGroup];
+                    topScore = groups[currentGroup].total;
                 }
             }
         }
 
         var resultString = Object.keys(groups).map(function(group) {
-            return group + ": " + groups[group];
-        }).join("; ");
-        resultString += "<br/>Winner: " + (topGroup ? topGroup.toUpperCase() : "<i>none</i>");
+            var string = group + ": +";
+            if (group === topGroup) {
+                string += groups[group].successRolls.reduce(function(s, a) { return s + a; }) + " coins (WINNER)";
+            } else {
+                string += groups[group].numberRolls + " coins (LOSER)";
+            }
+            return string;
+        }).join("<br/>");
         label.innerHTML = resultString;
         infoDiv.style.display = 'inline-block';
     }
