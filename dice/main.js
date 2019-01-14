@@ -26,7 +26,8 @@ function diceInitialize(container, w, h) {
 
     $t.bind($t.id('clear'), ['mouseup', 'touchend', 'touchcancel'], function(ev) {
         ev.stopPropagation();
-        set.value = '0';
+        set.dataset.fullDieProps = "";
+        set.value = '';
         onSetChange();
     });
 
