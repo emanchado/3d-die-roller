@@ -368,7 +368,7 @@
         light.target.position.set(0, 0, 0);
         light.castShadow = true;
         light.shadowCameraNear = mw / 10;
-        light.shadowCameraFar = mw * 3;
+        light.shadowCameraFar = mw * 4;
         light.shadowCameraFov = 50;
         light.shadowBias = 0.001;
         light.shadowDarkness = 0.3;
